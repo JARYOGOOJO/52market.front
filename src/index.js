@@ -518,7 +518,6 @@ const router = () => {
     if (path.startsWith("chat")) {
         chatView();
     }
-    setHeader();
 }
 
 window.addEventListener('hashchange', router)
