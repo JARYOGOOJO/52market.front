@@ -27,7 +27,6 @@ jobs:
 
       - name: Andrew's distribution
         run: |
-          cd src/main/resources/static
           npm install
           npx webpack build 
           aws s3 sync dist/ s3://52market.shop/ --acl public-read  
