@@ -217,7 +217,7 @@ export function editArticle(idx) {
             if (answer) {
                 let send = { id, title, content: answer, userId };
                 console.log(send)
-                axios.put(`${API_URL}/api/article/edit`, send).then(() => location.reload());
+                axios.put(`${API_URL}/api/article`, send).then(() => location.reload());
             }
         })
 }
@@ -248,10 +248,10 @@ export function Write() {
     formData.append('content', content)
 
     axios
-        .post(`${API_URL}/api/article/write`, formData)
+        .post(`${API_URL}/api/articles`, formData)
         .then(function (response) {
             console.log(response);
-            window.location.href = "/";
+            window.location.hash = "";
         })
         .catch(function (error) {
             console.log(error);
