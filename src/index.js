@@ -240,7 +240,7 @@ export function Write() {
     userId = parseInt(localStorage.getItem("userId"));
     const formData = new FormData();
     formData.append('userId', userId)
-    if( typeof $("#formFile")[0].files[0] != 'undefined') formData.append( "image", $("#formFile")[0].files[0] );
+    if( typeof $("#formFile")[0].files[0] != 'undefined') formData.append( "file", $("#formFile")[0].files[0] );
     formData.append('title', $("#exampleFormControlInput1").val())
     formData.append('content', $("#exampleFormControlTextarea1").val())
 
@@ -251,6 +251,7 @@ export function Write() {
         contentType: false,
         data: formData,
         success: function (response) {
+            console.log(response)
             window.location.reload();
         },
         fail: function (error) {
