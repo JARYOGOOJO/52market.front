@@ -251,7 +251,7 @@ export function Write() {
         .post(`${API_URL}/api/articles`, formData)
         .then(function (response) {
             console.log(response);
-            window.location.hash = "";
+            window.location.reload()
         })
         .catch(function (error) {
             console.log(error);
