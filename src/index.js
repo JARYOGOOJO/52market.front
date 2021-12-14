@@ -238,12 +238,14 @@ export function deleteArticle(idx) {
 
 export function Write() {
     userId = parseInt(localStorage.getItem("userId"));
+    console.log(userId)
+    console.log(API_URL)
     const formData = new FormData();
     formData.append('userId', userId)
     if( typeof $("#formFile")[0].files[0] != 'undefined') formData.append( "file", $("#formFile")[0].files[0] );
     formData.append('title', $("#exampleFormControlInput1").val())
     formData.append('content', $("#exampleFormControlTextarea1").val())
-
+    console.log(formData)
     $.ajax({
         type: "POST",
         url: `${API_URL}/api/articles`,
