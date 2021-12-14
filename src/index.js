@@ -238,25 +238,26 @@ export function deleteArticle(idx) {
 
 export function Write() {
     userId = parseInt(localStorage.getItem("userId"));
-    const title = $("#exampleFormControlInput1").val();
-    const content = $("#exampleFormControlTextarea1").val();
-    const image = $("#formFile")[0].files[0];
     const formData = new FormData();
     formData.append('userId', userId)
-    formData.append('file', image)
-    formData.append('title', title)
-    formData.append('content', content)
+    if( typeof $("#formFile")[0].files[0] != 'undefined') formData.append( "image", $("#formFile")[0].files[0] );
+    formData.append('title', $("#exampleFormControlInput1").val())
+    formData.append('content', $("#exampleFormControlTextarea1").val())
 
-    axios
-        .post(`${API_URL}/api/articles`, formData)
-        .then(function (response) {
-            console.log(response);
-            window.location.reload()
-        })
-        .catch(function (error) {
+    $.ajax({
+        type: "POST",
+        url: `${API_URL}/api/articles`,
+        processData: false,
+        contentType: false,
+        data: formData,
+        success: function (response) {
+            window.location.reload();
+        },
+        fail: function (error) {
             console.log(error);
             console.log("글 작성에 실패했습니다.")
-        });
+        }
+    })
 }
 
 
