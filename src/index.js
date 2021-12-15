@@ -16,6 +16,7 @@ Kakao.init("e1289217c77f4f46dc511544f119d102");
 
 function setHeader() {
     let token = localStorage.getItem("token");
+    if (token === null) return;
     axios.defaults.headers.common = { Authorization: `Bearer ${token}` }
 }
 
