@@ -8,11 +8,12 @@ import './css/main.css'
 import './kakao'
 import './aba5c3ead0';
 import SockJS from 'sockjs-client'
-import { Stomp } from '@stomp/stompjs'
+import {Stomp} from '@stomp/stompjs'
 
 let stompClient;
 let userId = null;
 Kakao.init("e1289217c77f4f46dc511544f119d102");
+window.onload = () => setHeader()
 
 function setHeader() {
     let token = localStorage.getItem("token");
@@ -26,7 +27,7 @@ function setHeader() {
             </li>
         `)
     } else {
-        axios.defaults.headers.common = { Authorization: `Bearer ${token}` }
+        axios.defaults.headers.common = {Authorization: `Bearer ${token}`}
         $(".navbar-nav.me-auto").html(`<ul class="navbar-nav me-auto">
             <li class="nav-item">
                 <a class="nav-link" href="#">Home</a>
@@ -60,7 +61,7 @@ export function loginWithKakao() {
     Kakao.Auth.login({
         success: function (authObj) {
             console.log(authObj)
-            axios.post(`${API_URL}/user/kakao`, { 'token': `${authObj['access_token']}` })
+            axios.post(`${API_URL}/user/kakao`, {'token': `${authObj['access_token']}`})
                 .then(response => {
                     console.log(response)
                     localStorage.setItem("token", response.data['token']);
@@ -88,7 +89,7 @@ export function login() {
     })
         .then(function (response) {
             console.log(response);
-            const { data } = response;
+            const {data} = response;
             if (data) {
                 localStorage.setItem("token", response.data['token']);
                 localStorage.setItem("userId", response.data['userId']);
@@ -184,11 +185,11 @@ export const showWriteButton = () => {
 export function writeComment(idx) {
     userId = parseInt(localStorage.getItem("userId"));
     const content = $(`#commentWrite-${idx}`).val();
+    $(`#commentWrite-${idx}`).val("");
     console.log(content);
-    const body = { articleId: idx, userId, content }
+    const body = {articleId: idx, userId, content}
     axios.post(`${API_URL}/api/comment`, body)
-        .then(({ data }) => {
-            $(`#commentWrite-${idx}`).val("");
+        .then(({data}) => {
             addComment(idx, data)
         })
         .catch(function (error) {
@@ -211,7 +212,7 @@ export function letsMeet(idx, userId) {
 
 export function removeComment(idx, id) {
     axios.delete(`${API_URL}/api/comment/${id}`)
-        .then(({ data }) => console.log(data))
+        .then(({data}) => console.log(data))
         .then(() => {
             $(`#comment-list-${idx}`).empty();
             callComments(idx);
@@ -221,10 +222,10 @@ export function removeComment(idx, id) {
 export function editArticle(idx) {
     axios.get(`${API_URL}/api/article/${idx}`)
         .then(response => {
-            let { id, title, content, user } = response.data;
+            let {id, title, content, user} = response.data;
             let answer = window.prompt("수정할 내용을 입력해주세요.", content)
             if (answer) {
-                let send = { id, title, content: answer, userId };
+                let send = {id, title, content: answer, userId};
                 console.log(send)
                 axios.put(`${API_URL}/api/article`, send).then(() => location.reload());
             }
@@ -249,7 +250,7 @@ export function Write() {
     userId = parseInt(localStorage.getItem("userId"));
     const formData = new FormData();
     formData.append('userId', userId)
-    if( typeof $("#formFile")[0].files[0] != 'undefined') formData.append( "file", $("#formFile")[0].files[0] );
+    if (typeof $("#formFile")[0].files[0] != 'undefined') formData.append("file", $("#formFile")[0].files[0]);
     formData.append('title', $("#exampleFormControlInput1").val())
     formData.append('content', $("#exampleFormControlTextarea1").val())
     $.ajax({
@@ -279,10 +280,10 @@ const getArticles = () => {
     axios
         .get(`${API_URL}/api/articles`)
         .then(function (response) {
-            const { data } = response;
+            const {data} = response;
             data.forEach((article) => {
-                const { id, title, content, user, imagePath, imageName } = article;
-                const { name } = user;
+                const {id, title, content, user, imagePath, imageName} = article;
+                const {name} = user;
                 let temp_html = `<!-- Card -->
                     <div class="col-xs-12 col-sm-6 col-md-4 mx-auto">
                         <div class="card" style="margin: 10px; min-width: 230px;">
@@ -311,8 +312,8 @@ const getArticles = () => {
                         </div>
                         <ul class="list-group" id="comment-list-${id}">
                         </ul></div></div>`;
-                    const no_not_mine = "";
-                    const my_contents = `
+                const no_not_mine = "";
+                const my_contents = `
                       <button onclick="app.editArticle(${id})" title="edit" type="button" class="btn btn-success">
                 <i class="far fa-edit"></i></button>
                 <button onclick="app.deleteArticle(${id})" title="delete" type="button" class="btn btn-success">
@@ -465,16 +466,15 @@ function chatView() {
 
 function addComment(idx, data) {
     userId = parseInt(localStorage.getItem("userId"));
-    let { id, content, createdAt, user } = data;
-    console.log(userId)
+    let {id, content, createdAt, user} = data;
     $(`#comment-list-${idx}`).append(`
     <li href="#" class="list-group-item list-group-item-action">
     <div class="d-flex w-100 justify-content-between">
         <small class="mb-1"><small class="mb-1 tit">${user.name}</small>
         ${moment(createdAt).fromNow()}</small>
         ${userId === user.id
-            ? `<button type="button" class="btn-close small" aria-label="remove" onclick="app.removeComment(${idx}, ${id})"></button>`
-            : `<button onclick="app.letsMeet(${idx}, ${user.id})" class="badge bg-success rounded-pill">chat</button>`}
+        ? `<button type="button" class="btn-close small" aria-label="remove" onclick="app.removeComment(${idx}, ${id})"></button>`
+        : `<button onclick="app.letsMeet(${idx}, ${user.id})" class="badge bg-success rounded-pill">chat</button>`}
   </div>
   <p class="mb-1">${content}</small>
 </li>`);
@@ -485,14 +485,14 @@ function callComments(idx) {
     axios
         .get(`${API_URL}/api/comments/${idx}`)
         .then((response) => {
-            let { data } = response
+            let {data} = response
             data.forEach((comment) => {
                 addComment(idx, comment);
             })
         })
 }
 
-export { getArticles, setModal, registerView, logInView, chatView, addComment, callComments };
+export {getArticles, setModal, registerView, logInView, chatView, addComment, callComments};
 
 export function getCookie(name) {
     const value = "; " + document.cookie;
@@ -502,7 +502,7 @@ export function getCookie(name) {
 
 const logOut = () => {
     localStorage.clear();
-    window.location.hash="login"
+    window.location.hash = "login"
 }
 
 function extractParam(word) {
