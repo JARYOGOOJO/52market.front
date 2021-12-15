@@ -408,7 +408,7 @@ function logInView() {
   <form action="">
       <div class="form-group">
           <label class="form-label-sm mt-4" for="exampleInputEmail1">Email address</label>
-          <input aria-describedby="emailHelp" class="form-control" id="exampleInputEmail1"
+          <input autofocus aria-describedby="emailHelp" class="form-control" id="exampleInputEmail1"
                  placeholder="Enter email" type="email">
           <small class="form-text text-muted" id="emailHelp"></small>
       </div>
