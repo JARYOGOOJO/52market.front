@@ -16,8 +16,26 @@ Kakao.init("e1289217c77f4f46dc511544f119d102");
 
 function setHeader() {
     let token = localStorage.getItem("token");
-    if (token === null) return;
-    axios.defaults.headers.common = { Authorization: `Bearer ${token}` }
+    if (token === null) {
+        $(".navbar-nav.me-auto").append(`
+            <li class="nav-item">
+                <a class="nav-link" href="#login">login</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#signup">signup</a>
+            </li>
+        `)
+    } else {
+        axios.defaults.headers.common = { Authorization: `Bearer ${token}` }
+        $(".navbar-nav.me-auto").html(`<ul class="navbar-nav me-auto">
+            <li class="nav-item">
+                <a class="nav-link" href="#">Home</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#logout">logout</a>
+            </li>
+        </ul>`)
+    }
 }
 
 const genRandomName = length => {
@@ -79,7 +97,7 @@ export function login() {
         })
         .catch(function (error) {
             console.log(error);
-            alert("로그인에 실패했습니다. 아이디와 비밀번호를 확인해주세요.")
+            alert("로그인에 실패했습니다.")
         });
     setHeader();
 }
@@ -98,7 +116,10 @@ export function signup() {
     const phone = $("#phoneDefault").val();
     const password = $("#exampleInputPassword1").val();
     const repassword = $("#exampleInputPassword2").val();
-    if (password !== repassword) return;
+    if (password !== repassword) {
+        alert("패스워드가 일치하지 않습니다.")
+        return;
+    }
     axios.post(`${API_URL}/user/signup`, {
         email: email,
         name: name,
@@ -138,25 +159,7 @@ export const passwordOK = () => {
     } else {
         $("#pwdHelp").text("");
         $("#repwdHelp").text("");
-        activate();
     }
-}
-
-export const checkEmail = () => {
-    const email = $("#exampleInputEmail1").val();
-    const regex = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-    if (!regex.test(email)) {
-        $("#emailHelp").text("이메일 형식이 올바르지 않습니다.");
-        $("#submit").attr("disabled", true);
-    } else {
-        $("#emailHelp").text("");
-    }
-}
-
-const activate = () => {
-    document.querySelectorAll("small").forEach(elem => {
-        if (!elem.text) $("#submit").removeAttr("disabled")
-    });
 }
 
 export function toggleComment(idx) {
@@ -165,6 +168,11 @@ export function toggleComment(idx) {
 
 
 export const showWriteButton = () => {
+    userId = parseInt(localStorage.getItem("userId"));
+    if (!userId) {
+        alert("로그인 후에 이용할 수 있습니다.")
+        location.hash = "login";
+    }
     $("#articles-body").append(`
     <button class="btn btn-success"
         data-bs-target="#staticBackdrop"
@@ -202,7 +210,7 @@ export function letsMeet(idx, userId) {
 }
 
 export function removeComment(idx, id) {
-    axios.delete(`https://callmebyyourname.shop/api/comment/${id}`)
+    axios.delete(`${API_URL}/api/comment/${id}`)
         .then(({ data }) => console.log(data))
         .then(() => {
             $(`#comment-list-${idx}`).empty();
@@ -239,14 +247,11 @@ export function deleteArticle(idx) {
 
 export function Write() {
     userId = parseInt(localStorage.getItem("userId"));
-    console.log(userId)
-    console.log(API_URL)
     const formData = new FormData();
     formData.append('userId', userId)
     if( typeof $("#formFile")[0].files[0] != 'undefined') formData.append( "file", $("#formFile")[0].files[0] );
     formData.append('title', $("#exampleFormControlInput1").val())
     formData.append('content', $("#exampleFormControlTextarea1").val())
-    console.log(formData)
     $.ajax({
         type: "POST",
         url: `${API_URL}/api/articles`,
@@ -279,39 +284,39 @@ const getArticles = () => {
                 const { id, title, content, user, imagePath, imageName } = article;
                 const { name } = user;
                 let temp_html = `<!-- Card -->
-              <div class="col-xs-12 col-sm-6 col-md-4 mx-auto">
-                  <div class="card" style="margin: 10px; min-width: 230px;">
-                  <!--Card image-->
-                  <div class="view overlay">
-                  <img class="card-img-top" src="${imagePath}" alt="${imageName}"><a href="#!">
-                  <div class="mask rgba-white-slight"></div>
-                  </a></div>
-                  <!--Card content-->
-                  <div class="card-body">
-                  <!--Title-->
-                  <h5 class="card-title tit">${title}</h5>
-                  <!--Text-->
-                  <p class="card-text">${content}</p>
-                  <!-- Provides extra visual weight and identifies the primary action in a set of buttons -->
-                  <button onclick="console.log(this.title, ${id}, '${name}')" title="like" type="button" class="btn btn-success">
-                  <i class="far fa-thumbs-up"></i></button>
-                  <button onclick="app.toggleComment(${id})" title="comment" type="button" class="btn btn-success">
-                  <i class="fas fa-comments"></i></button>
-                  {{__is_this_yours?__}}
-                  </div>
-                  <div id="commentEdit-${id}" class="input-group m-3 form-floating">
-                  <input id="commentWrite-${id}" class="form-control" aria-describedby="button-addon2">
-                  <label for="floatingInput">Leave a Comment...</label>
-                  <button class="btn btn-success" onclick="app.writeComment(${id})" id="button-addon2">Button</button>
-                  </div>
-                  <ul class="list-group" id="comment-list-${id}">
-                  </ul></div></div>`;
-                const no_not_mine = "";
-                const my_contents = `
-                  <button onclick="app.editArticle(${id})" title="edit" type="button" class="btn btn-success">
-              <i class="far fa-edit"></i></button>
-              <button onclick="app.deleteArticle(${id})" title="delete" type="button" class="btn btn-success">
-              <i class="fas fa-trash-alt"></i></button>`
+                    <div class="col-xs-12 col-sm-6 col-md-4 mx-auto">
+                        <div class="card" style="margin: 10px; min-width: 230px;">
+                        <!--Card image-->
+                        <div class="view overlay">
+                        <img class="card-img-top" src="${imagePath}" alt="${imageName}"><a href="#!">
+                        <div class="mask rgba-white-slight"></div>
+                        </a></div>
+                        <!--Card content-->
+                        <div class="card-body">
+                        <!--Title-->
+                        <h5 class="card-title tit">${title}</h5>
+                        <!--Text-->
+                        <p class="card-text">${content}</p>
+                        <!-- Provides extra visual weight and identifies the primary action in a set of buttons -->
+                        <button onclick="console.log(this.title, ${id}, '${name}')" title="like" type="button" class="btn btn-success">
+                        <i class="far fa-thumbs-up"></i></button>
+                        <button onclick="app.toggleComment(${id})" title="comment" type="button" class="btn btn-success">
+                        <i class="fas fa-comments"></i></button>
+                        {{__is_this_yours?__}}
+                        </div>
+                        <div id="commentEdit-${id}" class="input-group m-3 form-floating">
+                        <input id="commentWrite-${id}" class="form-control" aria-describedby="button-addon2">
+                        <label for="floatingInput">Leave a Comment...</label>
+                        <button class="btn btn-success" onclick="app.writeComment(${id})" id="button-addon2">Button</button>
+                        </div>
+                        <ul class="list-group" id="comment-list-${id}">
+                        </ul></div></div>`;
+                    const no_not_mine = "";
+                    const my_contents = `
+                      <button onclick="app.editArticle(${id})" title="edit" type="button" class="btn btn-success">
+                <i class="far fa-edit"></i></button>
+                <button onclick="app.deleteArticle(${id})" title="delete" type="button" class="btn btn-success">
+                <i class="fas fa-trash-alt"></i></button>`
                 if (user.id === userId) {
                     $("#articles-body").append(temp_html.replace("{{__is_this_yours?__}}", my_contents));
                 } else {
@@ -353,7 +358,7 @@ function setModal() {
                   </div>
                   <div class="modal-footer">
                       <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Close</button>
-                      <button class="btn btn-primary" onclick="app.Write();" type="button">Understood</button>
+                      <button class="btn btn-primary" onclick="app.Write();" type="button">Write</button>
                   </div>
               </form>
           </div>
@@ -418,11 +423,9 @@ function logInView() {
                  onchange="app.passwordOK()" placeholder="Password" type="password">
           <small class="form-text text-muted" id="pwdHelp"></small>
       </div>
-      <button class="btn mt-3 btn-lg login btn-login" disabled id="submit" onclick="app.login()" type="button">Login
+      <button class="btn mt-3 btn-lg login btn-login" id="submit" onclick="app.login()" type="button">Login
       </button>
-      <button class="btn mt-3 btn-lg login btn-kakao" id="custom-login-btn" onclick="app.loginWithKakao();">Kakao
-          Login
-      </button>
+      <button class="btn mt-3 btn-lg login btn-kakao" id="custom-login-btn" onclick="app.loginWithKakao()">Kakao Login</button>
   </form>
   <a class="text-success" href="#signup">let me signup</a>
   </div>`;
@@ -465,11 +468,11 @@ function addComment(idx, data) {
     let { id, content, createdAt, user } = data;
     console.log(userId)
     $(`#comment-list-${idx}`).append(`
-  <li href="#" class="list-group-item list-group-item-action">
-  <div class="d-flex w-100 justify-content-between">
-    <small class="mb-1"><small class="mb-1 tit">${user.name}</small>
-    ${moment(createdAt).fromNow()}</small>
-    ${userId === user.id
+    <li href="#" class="list-group-item list-group-item-action">
+    <div class="d-flex w-100 justify-content-between">
+        <small class="mb-1"><small class="mb-1 tit">${user.name}</small>
+        ${moment(createdAt).fromNow()}</small>
+        ${userId === user.id
             ? `<button type="button" class="btn-close small" aria-label="remove" onclick="app.removeComment(${idx}, ${id})"></button>`
             : `<button onclick="app.letsMeet(${idx}, ${user.id})" class="badge bg-success rounded-pill">chat</button>`}
   </div>
@@ -495,7 +498,11 @@ export function getCookie(name) {
     const value = "; " + document.cookie;
     const parts = value.split("; " + name + "=");
     if (parts.length === 2) return parts.pop().split(";").shift();
+}
 
+const logOut = () => {
+    localStorage.clear();
+    window.location.hash="login"
 }
 
 function extractParam(word) {
@@ -513,12 +520,14 @@ const router = () => {
         case "signup":
             registerView();
             break
-        case "signin":
+        case "login":
             logInView();
             break
         case "chat":
             chatView();
             break
+        case "logout":
+            logOut();
     }
     if (path.startsWith("chat")) {
         chatView();
