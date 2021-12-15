@@ -542,3 +542,10 @@ body {
   .message_template {
     display: none;
   }
+a.navbar-brand {
+  background-image: url("../../images/52market\ \(2\).png");
+  height: 50px;
+  width: 100px;
+  background-size: 100px;
+  background-repeat: no-repeat;
+}
