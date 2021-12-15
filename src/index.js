@@ -1,6 +1,6 @@
 import moment from 'moment';
 import axios from 'axios';
-import $ from 'jquery'
+import $, { nodeName } from 'jquery'
 import '@popperjs/core'
 import 'bootstrap'
 import './css/bootstrap.min.css';
@@ -81,6 +81,14 @@ export function login() {
             alert("로그인에 실패했습니다. 아이디와 비밀번호를 확인해주세요.")
         });
     setHeader();
+}
+
+export function logout() {
+    if(localStorage.getItem("token")) {
+        localStorage.clear();
+        alert("로그아웃 되었습니다");
+        location.hash = '';
+    }
 }
 
 export function signup() {
