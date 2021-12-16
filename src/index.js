@@ -229,20 +229,89 @@ export function connect() {
             console.log(JSON.parse(greeting.body))
         });
         stompClient.subscribe(`/sub/article/notice/all`, function (greeting) {
-            console.log(JSON.parse(greeting.body))
+            let {data} = JSON.parse(greeting.body)
+            console.log(data)
+            let {user, title, createdAt, content} = data;
+            let username = user.name;
+            toast(username, title, createdAt, content);
         });
-        stompClient.subscribe(`/sub/comment/notice/all`, function (greeting) {
-            console.log(greeting)
-            if (greeting.headers.act === "ADD") {
-                let {idx, data} = JSON.parse(greeting.body)
+        stompClient.subscribe(`/sub/comment/notice/all`, function (cmt) {
+            console.log(cmt)
+            if (cmt.headers.act === "ADD") {
+                let {idx, data} = JSON.parse(cmt.body)
                 addComment(idx, data)
-            } else if (greeting.headers.act === "DEL") {
-                let {idx} = JSON.parse(greeting.body)
+            } else if (cmt.headers.act === "DEL") {
+                let {idx} = JSON.parse(cmt.body)
                 $(`#comment-list-${idx}`).empty();
                 callComments(idx);
             }
         });
     });
+}
+
+export function toast(username, title, createdAt, content) {
+    $("body").append(`
+        <div class="toast fade show" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header">
+                <strong class="me-auto">${username} - "${title}"</strong>
+                <small>${createdAt}</small>
+                <button type="button" class="btn-close ms-2 mb-1" data-bs-dismiss="toast" aria-label="Close">
+                    <span aria-hidden="true"></span>
+                </button>
+            </div>
+            <div class="toast-body">
+                ${content}
+            </div>
+        </div>`)
+    setTimeout(()=>$(".toast.fade").remove(), 3000)
+    ;
+}
+
+export function Write() {
+    userId = parseInt(localStorage.getItem("userId"));
+    const formData = new FormData();
+    formData.append('userId', userId)
+    if (typeof $("#formFile")[0].files[0] != 'undefined') formData.append("file", $("#formFile")[0].files[0]);
+    formData.append('title', $("#exampleFormControlInput1").val())
+    formData.append('content', $("#exampleFormControlTextarea1").val())
+    axios.post(`${API_URL}/api/articles`, formData)
+        .then(function (response) {
+            console.log(response)
+            window.location.reload();
+            stompClient.send(`/sub/article/notice/all`,
+                {"act": "ADD"}, JSON.stringify({data: response.data}))
+        })
+        .catch(function (error) {
+            console.log(error);
+            console.log("글 작성에 실패했습니다.")
+        })
+}
+
+export function editArticle(idx) {
+    axios.get(`${API_URL}/api/article/${idx}`)
+        .then(response => {
+            let {id, title, content, user} = response.data;
+            let answer = window.prompt("수정할 내용을 입력해주세요.", content)
+            if (answer) {
+                let send = {id, title, content: answer, userId};
+                console.log(send)
+                axios.put(`${API_URL}/api/article`, send).then(() => location.reload());
+            }
+        })
+}
+
+export function deleteArticle(idx) {
+    userId = parseInt(localStorage.getItem("userId"));
+    axios
+        .delete(`${API_URL}/api/article/${idx}`)
+        .then(function (response) {
+            console.log(response);
+            location.reload();
+        })
+        .catch(function (error) {
+            console.log(error);
+            console.log("글 삭제에 실패했습니다.")
+        })
 }
 
 export function writeComment(idx) {
@@ -285,56 +354,6 @@ export function letsMeet(idx, userId) {
         })
 }
 
-export function editArticle(idx) {
-    axios.get(`${API_URL}/api/article/${idx}`)
-        .then(response => {
-            let {id, title, content, user} = response.data;
-            let answer = window.prompt("수정할 내용을 입력해주세요.", content)
-            if (answer) {
-                let send = {id, title, content: answer, userId};
-                console.log(send)
-                axios.put(`${API_URL}/api/article`, send).then(() => location.reload());
-            }
-        })
-}
-
-export function deleteArticle(idx) {
-    userId = parseInt(localStorage.getItem("userId"));
-    axios
-        .delete(`${API_URL}/api/article/${idx}`)
-        .then(function (response) {
-            console.log(response);
-            location.reload();
-        })
-        .catch(function (error) {
-            console.log(error);
-            console.log("글 삭제에 실패했습니다.")
-        })
-}
-
-export function Write() {
-    userId = parseInt(localStorage.getItem("userId"));
-    const formData = new FormData();
-    formData.append('userId', userId)
-    if (typeof $("#formFile")[0].files[0] != 'undefined') formData.append("file", $("#formFile")[0].files[0]);
-    formData.append('title', $("#exampleFormControlInput1").val())
-    formData.append('content', $("#exampleFormControlTextarea1").val())
-    $.ajax({
-        type: "POST",
-        url: `${API_URL}/api/articles`,
-        processData: false,
-        contentType: false,
-        data: formData,
-        success: function (response) {
-            console.log(response)
-            window.location.reload();
-        },
-        fail: function (error) {
-            console.log(error);
-            console.log("글 작성에 실패했습니다.")
-        }
-    })
-}
 
 const homePage = () => {
     let div = document.createElement("div");
