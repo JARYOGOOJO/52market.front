@@ -26,7 +26,7 @@ window.onscroll = _.throttle(function () {
     const scrollTop =
         (document.documentElement && document.documentElement.scrollTop)
         || document.body.scrollTop;
-    if (scrollHeight-innerHeight-scrollTop<1000) {
+    if (scrollHeight - innerHeight - scrollTop < 1000) {
         if (scrollable) {
             if (!loading) {
                 console.log("get articles...")
@@ -245,7 +245,7 @@ export function connect() {
         stompClient.subscribe(`/sub/user/notice/${userId}`, notice => {
             let [msg, room] = notice.body.split("room_id: ")
             console.log(msg)
-            window.location.hash=`chat?room=${room}`
+            window.location.hash = `chat?room=${room}`
             let body = {roomId: room, userId: userId}
             stompClient.send(`/pub/api/room/enter`, {}, JSON.stringify(body))
             chatIN(room)
@@ -295,7 +295,7 @@ export function letsMeet(articleId, commenterId, userId) {
 const chatIN = (roomSubscribeId) => {
     stompClient.subscribe(`/sub/chat/room/${roomSubscribeId}`, (greeting) => {
         console.log(greeting.headers)
-        take(greeting.body);
+        take(JSON.parse(greeting.body));
     });
 }
 
@@ -325,26 +325,30 @@ const send = function (msg) {
     let roomSubscribeId = extractParam('room');
     userId = parseInt(localStorage.getItem("userId"));
     $('.message_input').val('');
-    let {animate, prop} = $('.messages');
+    let $messages = $('.messages');
     let message = new Message({
         msg: msg,
         message_side: "right"
     });
-    let shot = {msg: msg, roomSubscribeId: roomSubscribeId};
-    stompClient.send(`/pub/chat/message`, {userId: userId}, JSON.stringify(shot))
+    let shot = {msg, userId};
+    stompClient.send(`/sub/chat/room/${roomSubscribeId}`, {}, JSON.stringify(shot))
     message.draw();
-    animate({ scrollTop: prop('scrollHeight') }, 300);
+    return $messages.animate({scrollTop: $messages.prop('scrollHeight')}, 300);
 };
 
-let take = function (msg) {
-    userId = parseInt(localStorage.getItem("userId"));
-    let {animate, prop} = $('.messages');
+let take = function (body) {
+    let {msg, userId} = body
+    let user = parseInt(localStorage.getItem("userId"));
+    if (user === parseInt(userId)) {
+        return;
+    }
+    let $messages = $('.messages');
     let message = new Message({
         msg: msg,
         message_side: "left"
     });
     message.draw();
-    return animate({ scrollTop: prop('scrollHeight') }, 300);
+    return $messages.animate({scrollTop: $messages.prop('scrollHeight')}, 300);
 };
 
 let getMessageText = () => {
@@ -376,7 +380,7 @@ export function toast(username, title, createdAt, content) {
                 ${content}
             </div>
         </div>`)
-    setTimeout(()=>$(".toast.fade").remove(), 3000);
+    setTimeout(() => $(".toast.fade").remove(), 3000);
 }
 
 // 글 작성하기
@@ -450,10 +454,10 @@ export function writeComment(idx) {
 export function removeComment(idx, id) {
     axios.delete(`${API_URL}/api/comment/${id}`)
         .then(({data}) => console.log(data))
-        .then(()=> {
+        .then(() => {
             stompClient.send(`/sub/comment/notice/all`,
-                {"act": "DEL"}, JSON.stringify({idx:idx}))
-    })
+                {"act": "DEL"}, JSON.stringify({idx: idx}))
+        })
 }
 
 // 홈 셋팅
@@ -738,6 +742,8 @@ const router = () => {
     page = 1;
     if (path.startsWith("chat")) {
         chatView();
+        let roomSubscribeId = extractParam('room');
+        chatIN(roomSubscribeId);
     }
 }
 
