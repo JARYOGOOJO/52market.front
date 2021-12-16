@@ -265,6 +265,63 @@ export function connect() {
     });
 }
 
+// 채팅 신청
+export function letsMeet(idx, userId) {
+    if (!idx) return;
+    const body = {
+        title: `새로운 대화 ${idx}`,
+        active: true
+    }
+    axios.post(`${API_URL}/api/room`, body)
+        .then((response) => {
+            let {roomSubscribeId} = response;
+            console.log(response.data);
+            location.hash = "chat";
+        })
+}
+
+// 채팅 메세지 객체 (함수형 프로그래밍)
+class Message {
+    constructor(arg) {
+        this.text = arg.text;
+        this.message_side = arg.message_side;
+        this.draw = (_this => function () {
+            let $message;
+            $message = $($('.message_template').clone().html());
+            $message.addClass(_this.message_side).find('.text').html(_this.text);
+            $('.messages').append($message);
+            return setTimeout(function () {
+                return $message.addClass('appeared');
+            }, 0);
+        })(this);
+        return this;
+    }
+}
+
+let sendMessage = function (text) {
+    if (text.trim() === '') {
+        return;
+    }
+    $('.message_input').val('');
+    let {animate, prop} = $('.messages');
+    let message = new Message({
+        text: text,
+        message_side: "right"
+    });
+    message.draw();
+    return animate({ scrollTop: prop('scrollHeight') }, 300);
+};
+let getMessageText = () => {
+    let $message_input = $('.message_input');
+    return $message_input.val();
+};
+$('.send_message').click(() => sendMessage(getMessageText()));
+$('.message_input').keyup(({which}) => {
+    if (which === 13) {
+        return sendMessage(getMessageText());
+    }
+});
+
 // 게시글 작성 시 토스트 나왔다 사라짐
 export function toast(username, title, createdAt, content) {
     $("body").append(`
@@ -280,8 +337,7 @@ export function toast(username, title, createdAt, content) {
                 ${content}
             </div>
         </div>`)
-    setTimeout(()=>$(".toast.fade").remove(), 3000)
-    ;
+    setTimeout(()=>$(".toast.fade").remove(), 3000);
 }
 
 // 글 작성하기
@@ -359,21 +415,6 @@ export function removeComment(idx, id) {
             stompClient.send(`/sub/comment/notice/all`,
                 {"act": "DEL"}, JSON.stringify({idx:idx}))
     })
-}
-
-// 채팅 신청
-export function letsMeet(idx, userId) {
-    if (!idx) return;
-    const body = {
-        title: `새로운 대화 ${idx}`,
-        active: true
-    }
-    axios.post(`${API_URL}/api/room`, body)
-        .then((response) => {
-            let {roomSubscribeId} = response;
-            console.log(response.data);
-            location.hash = "chat";
-        })
 }
 
 // 홈 셋팅
