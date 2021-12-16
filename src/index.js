@@ -124,23 +124,27 @@ export function login() {
 }
 
 export function signup() {
-    let latitude = 37.49798901601007;
-    let longitude = 127.03796438656106;
-    navigator
-        .geolocation
-        .getCurrentPosition((position) => {
-            latitude = position.coords.latitude;
-            longitude = position.coords.longitude;
-        });
     const email = $("#exampleInputEmail1").val();
     const name = $("#inputDefault").val();
     const phone = $("#phoneDefault").val();
     const password = $("#exampleInputPassword1").val();
     const repassword = $("#exampleInputPassword2").val();
+    let latitude;
+    let longitude;
     if (password !== repassword) {
         alert("패스워드가 일치하지 않습니다.")
         return;
     }
+    navigator
+        .geolocation
+        .getCurrentPosition((position) => {
+            latitude = position.coords.latitude;
+            longitude = position.coords.longitude;
+        }, (error) => {
+            console.log(error)
+            latitude = 37.49798901601007;
+            longitude = 127.03796438656106;
+        });
     axios.post(`${API_URL}/user/signup`, {
         email: email,
         name: name,
@@ -159,6 +163,17 @@ export function signup() {
             console.log(error);
         });
     setHeader();
+}
+
+export const checkEmail = () => {
+    const email = $("#exampleInputEmail1").val();
+    const regex = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+    if (!regex.test(email)) {
+        $("#emailHelp").text("이메일 형식이 올바르지 않습니다.");
+        $("#submit").attr("disabled", true);
+    } else {
+        $("#emailHelp").text("");
+    }
 }
 
 export const autoHyphen = (target) => {
@@ -180,6 +195,7 @@ export const passwordOK = () => {
     } else {
         $("#pwdHelp").text("");
         $("#repwdHelp").text("");
+        $("#submit").attr("disabled", false);
     }
 }
 
@@ -202,6 +218,33 @@ export const showWriteButton = () => {
     </button>`);
 }
 
+
+export function connect() {
+    var socket = new SockJS(`${API_URL}/ws-stomp`);
+    stompClient = Stomp.over(socket);
+    stompClient.connect({}, function (frame) {
+        // setConnected(true);
+        console.log('Connected: ' + frame);
+        stompClient.subscribe(`/sub/chat/all`, function (greeting) {
+            console.log(JSON.parse(greeting.body))
+        });
+        stompClient.subscribe(`/sub/article/notice/all`, function (greeting) {
+            console.log(JSON.parse(greeting.body))
+        });
+        stompClient.subscribe(`/sub/comment/notice/all`, function (greeting) {
+            console.log(greeting)
+            if (greeting.headers.act === "ADD") {
+                let {idx, data} = JSON.parse(greeting.body)
+                addComment(idx, data)
+            } else if (greeting.headers.act === "DEL") {
+                let {idx} = JSON.parse(greeting.body)
+                $(`#comment-list-${idx}`).empty();
+                callComments(idx);
+            }
+        });
+    });
+}
+
 export function writeComment(idx) {
     userId = parseInt(localStorage.getItem("userId"));
     const content = $(`#commentWrite-${idx}`).val();
@@ -210,7 +253,8 @@ export function writeComment(idx) {
     const body = {articleId: idx, userId, content}
     axios.post(`${API_URL}/api/comment`, body)
         .then(({data}) => {
-            addComment(idx, data)
+            stompClient.send(`/sub/comment/notice/all`,
+                {"act": "ADD"}, JSON.stringify({idx: idx, data: data}))
         })
         .catch(function (error) {
             // handle error
@@ -218,24 +262,26 @@ export function writeComment(idx) {
         });
 }
 
-export function letsMeet(idx, userId) {
-    const body = {
-        articleId: idx,
-        commenterId: userId
-    }
-    axios.post(`${API_URL}/api/meet`, body)
-        .then((response) => {
-            console.log(response.data);
-            location.hash = "chat";
-        })
-}
-
 export function removeComment(idx, id) {
     axios.delete(`${API_URL}/api/comment/${id}`)
         .then(({data}) => console.log(data))
-        .then(() => {
-            $(`#comment-list-${idx}`).empty();
-            callComments(idx);
+        .then(()=> {
+            stompClient.send(`/sub/comment/notice/all`,
+                {"act": "DEL"}, JSON.stringify({idx:idx}))
+    })
+}
+
+export function letsMeet(idx, userId) {
+    if (!idx) return;
+    const body = {
+        title: `새로운 대화 ${idx}`,
+        active: true
+    }
+    axios.post(`${API_URL}/api/room`, body)
+        .then((response) => {
+            let {roomSubscribeId} = response;
+            console.log(response.data);
+            location.hash = "chat";
         })
 }
 
@@ -540,6 +586,7 @@ function extractParam(word) {
 
 const router = () => {
     let path = location.hash.replace("#", "")
+    connect();
     switch (path) {
         case "":
             homePage();
