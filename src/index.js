@@ -19,6 +19,7 @@ let page = 1;
 Kakao.init("e1289217c77f4f46dc511544f119d102");
 window.onload = () => setHeader()
 
+// 무-한 스크롤 무야호
 window.onscroll = _.throttle(function () {
     const {innerHeight} = window;
     const {scrollHeight} = document.body;
@@ -35,20 +36,26 @@ window.onscroll = _.throttle(function () {
     }
 }, 500)
 
+// 로그인한 사용자인지 판별 후 리퀘스트헤더+내비바 셋팅
 function setHeader() {
     let token = localStorage.getItem("token");
     if (token === null) {
-        $(".navbar-nav.me-auto").append(`
+        $(".navbar-nav.me-auto").html(`
+        <ul class="navbar-nav me-auto">
+            <li class="nav-item">
+                <a class="nav-link" href="#">Home</a>
+            </li>
             <li class="nav-item">
                 <a class="nav-link" href="#login">login</a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" href="#signup">signup</a>
             </li>
-        `)
+        </ul>`)
     } else {
         axios.defaults.headers.common = {Authorization: `Bearer ${token}`}
-        $(".navbar-nav.me-auto").html(`<ul class="navbar-nav me-auto">
+        $(".navbar-nav.me-auto").html(`
+        <ul class="navbar-nav me-auto">
             <li class="nav-item">
                 <a class="nav-link" href="#">Home</a>
             </li>
@@ -59,6 +66,7 @@ function setHeader() {
     }
 }
 
+// 랜덤 UUID 만들기
 const genRandomName = length => {
     let name = '';
     let characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + "abcdefghijklmnopqrstuvwxyz" + "0123456789";
@@ -71,12 +79,14 @@ const genRandomName = length => {
     return name;
 }
 
+// 랜덤 UUID 숫자형 만들기
 const genLongNumber = length => {
     if (length < 1) return;
     let number = Math.random() * (10 ** (length));
     return Math.floor(number);
 }
 
+// 카카오톡 로그인하기
 export function loginWithKakao() {
     Kakao.Auth.login({
         success: function (authObj) {
@@ -97,6 +107,7 @@ export function loginWithKakao() {
     })
 }
 
+// 일반 로그인하기
 export function login() {
     const email = $("#exampleInputEmail1").val();
     const password = $("#exampleInputPassword1").val();
@@ -114,15 +125,16 @@ export function login() {
                 localStorage.setItem("token", response.data['token']);
                 localStorage.setItem("userId", response.data['userId']);
                 location.hash = '';
+                setHeader();
             }
         })
         .catch(function (error) {
             console.log(error);
             alert("로그인에 실패했습니다.")
         });
-    setHeader();
 }
 
+// 회원가입하기
 export function signup() {
     const email = $("#exampleInputEmail1").val();
     const name = $("#inputDefault").val();
@@ -165,6 +177,7 @@ export function signup() {
     setHeader();
 }
 
+// 이메일 유효성 검사
 export const checkEmail = () => {
     const email = $("#exampleInputEmail1").val();
     const regex = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
@@ -176,12 +189,14 @@ export const checkEmail = () => {
     }
 }
 
+// 자동으로 전화번호 형태 만들기
 export const autoHyphen = (target) => {
     target.value = target.value
         .replace(/[^0-9]/, '')
         .replace(/^(\d{2,3})(\d{3,4})(\d{4})$/, `$1-$2-$3`);
 }
 
+// 비밀 번호 유효성 검사
 export const passwordOK = () => {
     const password = $("#exampleInputPassword1").val();
     const repassword = $("#exampleInputPassword2").val();
@@ -199,11 +214,12 @@ export const passwordOK = () => {
     }
 }
 
+// 댓글 달기 창 토글
 export function toggleComment(idx) {
     $(`#commentEdit-${idx}`).toggle('fade')
 }
 
-
+// 글쓰기 버튼(fixed) 호출
 export const showWriteButton = () => {
     userId = parseInt(localStorage.getItem("userId"));
     if (!userId) {
@@ -218,9 +234,9 @@ export const showWriteButton = () => {
     </button>`);
 }
 
-
+// 웹소켓 연결 및 구독 설정
 export function connect() {
-    var socket = new SockJS(`${API_URL}/ws-stomp`);
+    let socket = new SockJS(`${API_URL}/ws-stomp`);
     stompClient = Stomp.over(socket);
     stompClient.connect({}, function (frame) {
         // setConnected(true);
@@ -249,6 +265,7 @@ export function connect() {
     });
 }
 
+// 게시글 작성 시 토스트 나왔다 사라짐
 export function toast(username, title, createdAt, content) {
     $("body").append(`
         <div class="toast fade show" role="alert" aria-live="assertive" aria-atomic="true">
@@ -267,6 +284,7 @@ export function toast(username, title, createdAt, content) {
     ;
 }
 
+// 글 작성하기
 export function Write() {
     userId = parseInt(localStorage.getItem("userId"));
     const formData = new FormData();
@@ -300,6 +318,7 @@ export function editArticle(idx) {
         })
 }
 
+// 글 내용만 수정하기
 export function deleteArticle(idx) {
     userId = parseInt(localStorage.getItem("userId"));
     axios
@@ -314,6 +333,7 @@ export function deleteArticle(idx) {
         })
 }
 
+// 댓글 작성하기
 export function writeComment(idx) {
     userId = parseInt(localStorage.getItem("userId"));
     const content = $(`#commentWrite-${idx}`).val();
@@ -331,6 +351,7 @@ export function writeComment(idx) {
         });
 }
 
+// 댓글 삭제하기
 export function removeComment(idx, id) {
     axios.delete(`${API_URL}/api/comment/${id}`)
         .then(({data}) => console.log(data))
@@ -340,6 +361,7 @@ export function removeComment(idx, id) {
     })
 }
 
+// 채팅 신청
 export function letsMeet(idx, userId) {
     if (!idx) return;
     const body = {
@@ -354,7 +376,7 @@ export function letsMeet(idx, userId) {
         })
 }
 
-
+// 홈 셋팅
 const homePage = () => {
     let div = document.createElement("div");
     div.className = "card-deck";
@@ -362,6 +384,7 @@ const homePage = () => {
     $("main > div").replaceWith(div);
 }
 
+// 게시글 불러오기
 const getArticles = () => {
     loading = true;
     userId = parseInt(localStorage.getItem("userId"));
@@ -426,6 +449,7 @@ const getArticles = () => {
         });
 };
 
+// 게시글 작성 모달 셋팅
 function setModal() {
     $("main").append(`
     <div aria-hidden="true" aria-labelledby="staticBackdropLabel" class="modal fade" data-bs-backdrop="static"
@@ -460,6 +484,7 @@ function setModal() {
     </div>`)
 }
 
+// 회원가입 화면
 function registerView() {
     document.querySelector("main").innerHTML = `
     <div class="col-lg-3 col-sm-4 m-auto">
@@ -501,6 +526,7 @@ function registerView() {
          <a class="text-success" href="#signin">let me signin</a></div>`
 }
 
+// 로그인 화면
 function logInView() {
     document.querySelector("main").innerHTML = `
     <div class="col-lg-3 col-sm-4 m-auto">
@@ -525,6 +551,7 @@ function logInView() {
     </div>`;
 }
 
+// 채팅 화면
 function chatView() {
     document.querySelector("main").innerHTML = `
   <div class="chat_window">
@@ -556,7 +583,7 @@ function chatView() {
       </li>
   </div>`
 }
-
+// 댓글 생성
 function addComment(idx, data) {
     userId = parseInt(localStorage.getItem("userId"));
     let {id, content, createdAt, user} = data;
@@ -573,7 +600,7 @@ function addComment(idx, data) {
 </li>`);
 }
 
-
+// 댓글 리스트 호출
 function callComments(idx) {
     axios
         .get(`${API_URL}/api/comments/${idx}`)
@@ -585,24 +612,26 @@ function callComments(idx) {
         })
 }
 
-export {getArticles, setModal, registerView, logInView, chatView, addComment, callComments};
-
+// 쿠키 가져오기
 export function getCookie(name) {
     const value = "; " + document.cookie;
     const parts = value.split("; " + name + "=");
     if (parts.length === 2) return parts.pop().split(";").shift();
 }
 
+// 로컬 스토리지 초기화(로그아웃)
 const logOut = () => {
     localStorage.clear();
     window.location.hash = "login"
     setHeader();
 }
 
+// 해시태그에서 특정 파라미터 추출하기
 function extractParam(word) {
     return window.location.hash.split(word + "=").pop()
 }
 
+// 모든 뷰로 이어지는 라우터
 const router = () => {
     let path = location.hash.replace("#", "")
     connect();
@@ -633,3 +662,4 @@ const router = () => {
 window.addEventListener('hashchange', router)
 
 router();
+export {getArticles, setModal, registerView, logInView, chatView, addComment, callComments};
