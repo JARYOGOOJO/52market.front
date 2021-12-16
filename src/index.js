@@ -158,12 +158,12 @@ export function signup() {
             longitude = 127.03796438656106;
         });
     axios.post(`${API_URL}/user/signup`, {
-        email: email,
-        name: name,
+        email,
+        name,
         phoneNumber: phone,
-        password: password,
-        latitude: latitude,
-        longitude: longitude
+        password,
+        latitude,
+        longitude
     })
         .then(function (response) {
             console.log(response);
@@ -236,22 +236,31 @@ export const showWriteButton = () => {
 
 // 웹소켓 연결 및 구독 설정
 export function connect() {
+    userId = parseInt(localStorage.getItem("userId"));
     let socket = new SockJS(`${API_URL}/ws-stomp`);
     stompClient = Stomp.over(socket);
     stompClient.connect({}, function (frame) {
         // setConnected(true);
         console.log('Connected: ' + frame);
-        stompClient.subscribe(`/sub/chat/all`, function (greeting) {
-            console.log(JSON.parse(greeting.body))
+        stompClient.subscribe(`/sub/user/notice/${userId}`, notice => {
+            let [msg, room] = notice.body.split("room_id: ")
+            console.log(msg)
+            window.location.hash=`chat?room=${room}`
+            let body = {roomId: room, userId: userId}
+            stompClient.send(`/pub/api/room/enter`, {}, JSON.stringify(body))
+            chatIN(room)
         });
-        stompClient.subscribe(`/sub/article/notice/all`, function (greeting) {
-            let {data} = JSON.parse(greeting.body)
+        stompClient.subscribe(`/sub/chat/all`, chat => {
+            console.log(JSON.parse(chat.body))
+        });
+        stompClient.subscribe(`/sub/article/notice/all`, article => {
+            let {data} = JSON.parse(article.body)
             console.log(data)
             let {user, title, createdAt, content} = data;
             let username = user.name;
             toast(username, title, createdAt, content);
         });
-        stompClient.subscribe(`/sub/comment/notice/all`, function (cmt) {
+        stompClient.subscribe(`/sub/comment/notice/all`, cmt => {
             console.log(cmt)
             if (cmt.headers.act === "ADD") {
                 let {idx, data} = JSON.parse(cmt.body)
@@ -266,29 +275,43 @@ export function connect() {
 }
 
 // 채팅 신청
-export function letsMeet(idx, userId) {
-    if (!idx) return;
+export function letsMeet(articleId, commenterId, userId) {
+    if (!(articleId && commenterId && userId)) return;
     const body = {
-        title: `새로운 대화 ${idx}`,
+        title: `새로운 대화 ${articleId}`,
         active: true
     }
     axios.post(`${API_URL}/api/room`, body)
         .then((response) => {
-            let {roomSubscribeId} = response;
+            let {roomSubscribeId} = response.data;
             console.log(response.data);
-            location.hash = "chat";
+            location.hash = `chat?room=${roomSubscribeId}`;
+            chatIN(roomSubscribeId)
+            let message = {msg: `채팅방에 초대되었습니다. room_id: ${roomSubscribeId}`, userSubscribeId: commenterId}
+            stompClient.send(`/pub/user/notice`, {}, JSON.stringify(message))
         })
+}
+
+const chatIN = (roomSubscribeId) => {
+    stompClient.subscribe(`/sub/chat/room/${roomSubscribeId}`, (greeting) => {
+        console.log(greeting.headers)
+        take(greeting.body);
+    });
+}
+
+const chatOUT = (roomSubscribeId) => {
+    return stompClient.unsubscribe(`/sub/chat/room/${roomSubscribeId}`)
 }
 
 // 채팅 메세지 객체 (함수형 프로그래밍)
 class Message {
     constructor(arg) {
-        this.text = arg.text;
+        this.msg = arg.msg;
         this.message_side = arg.message_side;
         this.draw = (_this => function () {
             let $message;
             $message = $($('.message_template').clone().html());
-            $message.addClass(_this.message_side).find('.text').html(_this.text);
+            $message.addClass(_this.message_side).find('.text').html(_this.msg);
             $('.messages').append($message);
             return setTimeout(function () {
                 return $message.addClass('appeared');
@@ -298,29 +321,45 @@ class Message {
     }
 }
 
-let sendMessage = function (text) {
-    if (text.trim() === '') {
-        return;
-    }
+const send = function (msg) {
+    let roomSubscribeId = extractParam('room');
+    userId = parseInt(localStorage.getItem("userId"));
     $('.message_input').val('');
     let {animate, prop} = $('.messages');
     let message = new Message({
-        text: text,
+        msg: msg,
         message_side: "right"
+    });
+    let shot = {msg: msg, roomSubscribeId: roomSubscribeId};
+    stompClient.send(`/pub/chat/message`, {userId: userId}, JSON.stringify(shot))
+    message.draw();
+    animate({ scrollTop: prop('scrollHeight') }, 300);
+};
+
+let take = function (msg) {
+    userId = parseInt(localStorage.getItem("userId"));
+    let {animate, prop} = $('.messages');
+    let message = new Message({
+        msg: msg,
+        message_side: "left"
     });
     message.draw();
     return animate({ scrollTop: prop('scrollHeight') }, 300);
 };
+
 let getMessageText = () => {
-    let $message_input = $('.message_input');
-    return $message_input.val();
-};
-$('.send_message').click(() => sendMessage(getMessageText()));
-$('.message_input').keyup(({which}) => {
-    if (which === 13) {
-        return sendMessage(getMessageText());
+    return $('.message_input').val();
+}
+
+export const _keyup = () => {
+    if ((event.which) === 13) {
+        sendMessage();
     }
-});
+};
+
+export const sendMessage = () => {
+    send(getMessageText());
+}
 
 // 게시글 작성 시 토스트 나왔다 사라짐
 export function toast(username, title, createdAt, content) {
@@ -433,7 +472,7 @@ const getArticles = () => {
         .get(`${API_URL}/api/articles?page=${page}`)
         .then(function (response) {
             const {data} = response;
-            if (data.length === 0) {
+            if (!data.length) {
                 scrollable = false;
             }
             data.forEach((article) => {
@@ -607,7 +646,7 @@ function chatView() {
       <ul class="messages"></ul>
       <div class="bottom_wrapper clearfix">
           <div class="message_input_wrapper">
-              <input class="message_input" placeholder="Type your message here..." onkeyup="app.send()" />
+              <input class="message_input" placeholder="Type your message here..." onkeyup="app._keyup()" />
           </div>
           <div class="send_message" onclick="app.sendMessage()">
               <i class="icon fas fa-paper-plane"></i>
@@ -624,6 +663,7 @@ function chatView() {
       </li>
   </div>`
 }
+
 // 댓글 생성
 function addComment(idx, data) {
     userId = parseInt(localStorage.getItem("userId"));
@@ -635,7 +675,7 @@ function addComment(idx, data) {
         ${moment(createdAt).fromNow()}</small>
         ${userId === user.id
         ? `<button type="button" class="btn-close small" aria-label="remove" onclick="app.removeComment(${idx}, ${id})"></button>`
-        : `<button onclick="app.letsMeet(${idx}, ${user.id})" class="badge bg-success rounded-pill">chat</button>`}
+        : `<button onclick="app.letsMeet(${idx}, ${user.id}, ${userId})" class="badge bg-success rounded-pill">chat</button>`}
   </div>
   <p class="mb-1">${content}</small>
 </li>`);
@@ -695,6 +735,7 @@ const router = () => {
         case "logout":
             logOut();
     }
+    page = 1;
     if (path.startsWith("chat")) {
         chatView();
     }
