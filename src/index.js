@@ -7,13 +7,33 @@ import './css/bootstrap.min.css';
 import './css/main.css'
 import './kakao'
 import './aba5c3ead0';
+import _ from 'lodash';
 import SockJS from 'sockjs-client'
 import {Stomp} from '@stomp/stompjs'
 
 let stompClient;
 let userId = null;
+let loading = false;
+let scrollable = true;
+let page = 1;
 Kakao.init("e1289217c77f4f46dc511544f119d102");
 window.onload = () => setHeader()
+
+window.onscroll = _.throttle(function () {
+    const {innerHeight} = window;
+    const {scrollHeight} = document.body;
+    const scrollTop =
+        (document.documentElement && document.documentElement.scrollTop)
+        || document.body.scrollTop;
+    if (scrollHeight-innerHeight-scrollTop<1000) {
+        if (scrollable) {
+            if (!loading) {
+                console.log("get articles...")
+                getArticles();
+            }
+        }
+    }
+}, 500)
 
 function setHeader() {
     let token = localStorage.getItem("token");
@@ -270,17 +290,23 @@ export function Write() {
     })
 }
 
-
-const getArticles = () => {
+const homePage = () => {
     let div = document.createElement("div");
     div.className = "card-deck";
     div.id = "articles-body"
     $("main > div").replaceWith(div);
+}
+
+const getArticles = () => {
+    loading = true;
     userId = parseInt(localStorage.getItem("userId"));
     axios
-        .get(`${API_URL}/api/articles`)
+        .get(`${API_URL}/api/articles?page=${page}`)
         .then(function (response) {
             const {data} = response;
+            if (data.length === 0) {
+                scrollable = false;
+            }
             data.forEach((article) => {
                 const {id, title, content, user, imagePath, imageName} = article;
                 const {name} = user;
@@ -326,6 +352,8 @@ const getArticles = () => {
                 callComments(id);
                 $(`#commentEdit-${id}`).hide();
             });
+            loading = false;
+            page++;
         })
         .catch(function (error) {
             // handle error
@@ -335,101 +363,101 @@ const getArticles = () => {
 
 function setModal() {
     $("main").append(`
-  <div aria-hidden="true" aria-labelledby="staticBackdropLabel" class="modal fade" data-bs-backdrop="static"
-      data-bs-keyboard="false" id="staticBackdrop" tabindex="-1">
-      <div class="modal-dialog">
-          <div class="modal-content">
-              <form action="" enctype="multipart/form-data" method="post">
-                  <div class="modal-header">
-                      <h5 class="modal-title" id="staticBackdropLabel">Modal title</h5>
-                      <button aria-label="Close" class="btn-close" data-bs-dismiss="modal" type="button"></button>
-                  </div>
-                  <div class="modal-body">
+    <div aria-hidden="true" aria-labelledby="staticBackdropLabel" class="modal fade" data-bs-backdrop="static"
+        data-bs-keyboard="false" id="staticBackdrop" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form action="" enctype="multipart/form-data" method="post">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="staticBackdropLabel">Modal title</h5>
+                        <button aria-label="Close" class="btn-close" data-bs-dismiss="modal" type="button"></button>
+                    </div>
+                    <div class="modal-body">
 
-                      <div class="mb-3">
-                          <label class="form-label" for="exampleFormControlInput1">Title</label>
-                          <input class="form-control" id="exampleFormControlInput1" placeholder="share your story"
-                              type="text">
-                      </div>
-                      <div class="mb-3">
-                          <label class="form-label" for="exampleFormControlTextarea1">Content</label>
-                          <textarea class="form-control" id="exampleFormControlTextarea1" rows="5"></textarea>
-                      </div>
-                      <input accept="image/*" class="form-control" id="formFile" name="u_file" type="file">
-                  </div>
-                  <div class="modal-footer">
-                      <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Close</button>
-                      <button class="btn btn-primary" onclick="app.Write();" type="button">Write</button>
-                  </div>
-              </form>
-          </div>
-      </div>
-  </div>`)
+                        <div class="mb-3">
+                            <label class="form-label" for="exampleFormControlInput1">Title</label>
+                            <input class="form-control" id="exampleFormControlInput1" placeholder="share your story"
+                                type="text">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="exampleFormControlTextarea1">Content</label>
+                            <textarea class="form-control" id="exampleFormControlTextarea1" rows="5"></textarea>
+                        </div>
+                        <input accept="image/*" class="form-control" id="formFile" name="u_file" type="file">
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Close</button>
+                        <button class="btn btn-primary" onclick="app.Write();" type="button">Write</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>`)
 }
 
 function registerView() {
     document.querySelector("main").innerHTML = `
-  <div class="col-lg-3 col-sm-4 m-auto">
-      <form action="" style="display: grid;">
-          <div class="form-group">
-              <label class="form-label mt-4" for="exampleInputEmail1">Email address</label>
-              <input aria-describedby="emailHelp" class="form-control" id="exampleInputEmail1" oninput="app.checkEmail()"
-                  placeholder="enter email" type="email">
-              <small class="form-text text-muted" id="emailHelp"></small>
-          </div>
-          <div class="form-group">
-              <label class="col-form-label-sm mt-2" for="inputDefault">Name</label>
-              <input aria-describedby="nameHelp" class="form-control" id="inputDefault"
-                  placeholder="tell us your name"
-                  type="text">
-              <small class="form-text text-muted" id="nameHelp"></small>
-          </div>
-          <div class="form-group">
-              <label class="col-form-label-sm mt-2" for="phoneDefault">Phone</label>
-              <input aria-describedby="phoneHelp" class="form-control" id="phoneDefault" oninput="app.autoHyphen(this)"
-                  pattern="[0-9]{3}-[0-9]{2}-[0-9]{3}" placeholder="insert your phone number" type="tel">
-              <small class="form-text text-muted" id="phoneHelp"></small>
-          </div>
-          <div class="form-group">
-              <label class="form-label mt-2" for="exampleInputPassword1">Password</label>
-              <input aria-describedby="pwdHelp" class="form-control" id="exampleInputPassword1" oninput="app.passwordOK()"
-                  placeholder="password" type="password">
-              <small class="form-text text-muted" id="pwdHelp"></small>
-          </div>
-          <div class="form-group">
-              <label class="form-label-sm mt-2" for="exampleInputPassword2">re-Password</label>
-              <input aria-describedby="repwdHelp" class="form-control" id="exampleInputPassword2"
-                  oninput="app.passwordOK()" placeholder="confirm password" type="password">
-              <small class="form-text text-muted" id="repwdHelp"></small>
-          </div>
-          <button class="btn mt-3 btn-lg btn-success" disabled id="submit" onclick="app.signup()" type="button">Register
-          </button>
-      </form>
-      <a class="text-success" href="#signin">let me signin</a></div>`
+    <div class="col-lg-3 col-sm-4 m-auto">
+         <form action="" style="display: grid;">
+             <div class="form-group">
+                 <label class="form-label mt-4" for="exampleInputEmail1">Email address</label>
+                 <input aria-describedby="emailHelp" class="form-control" id="exampleInputEmail1" oninput="app.checkEmail()"
+                     placeholder="enter email" type="email">
+                 <small class="form-text text-muted" id="emailHelp"></small>
+             </div>
+             <div class="form-group">
+                 <label class="col-form-label-sm mt-2" for="inputDefault">Name</label>
+                 <input aria-describedby="nameHelp" class="form-control" id="inputDefault"
+                     placeholder="tell us your name"
+                     type="text">
+                 <small class="form-text text-muted" id="nameHelp"></small>
+             </div>
+             <div class="form-group">
+                 <label class="col-form-label-sm mt-2" for="phoneDefault">Phone</label>
+                 <input aria-describedby="phoneHelp" class="form-control" id="phoneDefault" oninput="app.autoHyphen(this)"
+                     pattern="[0-9]{3}-[0-9]{2}-[0-9]{3}" placeholder="insert your phone number" type="tel">
+                 <small class="form-text text-muted" id="phoneHelp"></small>
+             </div>
+             <div class="form-group">
+                 <label class="form-label mt-2" for="exampleInputPassword1">Password</label>
+                 <input aria-describedby="pwdHelp" class="form-control" id="exampleInputPassword1" oninput="app.passwordOK()"
+                     placeholder="password" type="password">
+                 <small class="form-text text-muted" id="pwdHelp"></small>
+             </div>
+             <div class="form-group">
+                 <label class="form-label-sm mt-2" for="exampleInputPassword2">re-Password</label>
+                 <input aria-describedby="repwdHelp" class="form-control" id="exampleInputPassword2"
+                     oninput="app.passwordOK()" placeholder="confirm password" type="password">
+                 <small class="form-text text-muted" id="repwdHelp"></small>
+             </div>
+             <button class="btn mt-3 btn-lg btn-success" disabled id="submit" onclick="app.signup()" type="button">Register
+             </button>
+         </form>
+         <a class="text-success" href="#signin">let me signin</a></div>`
 }
 
 function logInView() {
     document.querySelector("main").innerHTML = `
-  <div class="col-lg-3 col-sm-4 m-auto">
-  <form action="">
-      <div class="form-group">
+    <div class="col-lg-3 col-sm-4 m-auto">
+      <form action="">
+        <div class="form-group">
           <label class="form-label-sm mt-4" for="exampleInputEmail1">Email address</label>
           <input autofocus aria-describedby="emailHelp" class="form-control" id="exampleInputEmail1"
                  placeholder="Enter email" type="email">
           <small class="form-text text-muted" id="emailHelp"></small>
-      </div>
-      <div class="form-group">
+        </div>
+        <div class="form-group">
           <label class="form-label-sm mt-2" for="exampleInputPassword1">Password</label>
           <input aria-describedby="pwdHelp" class="form-control" id="exampleInputPassword1"
                  onchange="app.passwordOK()" placeholder="Password" type="password">
           <small class="form-text text-muted" id="pwdHelp"></small>
-      </div>
-      <button class="btn mt-3 btn-lg login btn-login" id="submit" onclick="app.login()" type="button">Login
-      </button>
-      <button class="btn mt-3 btn-lg login btn-kakao" id="custom-login-btn" onclick="app.loginWithKakao()">Kakao Login</button>
-  </form>
-  <a class="text-success" href="#signup">let me signup</a>
-  </div>`;
+        </div>
+        <button class="btn mt-3 btn-lg login btn-login" id="submit" onclick="app.login()" type="button">Login
+        </button>
+        <button class="btn mt-3 btn-lg login btn-kakao" id="custom-login-btn" onclick="app.loginWithKakao()">Kakao Login</button>
+      </form>
+      <a class="text-success" href="#signup">let me signup</a>
+    </div>`;
 }
 
 function chatView() {
@@ -503,6 +531,7 @@ export function getCookie(name) {
 const logOut = () => {
     localStorage.clear();
     window.location.hash = "login"
+    setHeader();
 }
 
 function extractParam(word) {
@@ -513,6 +542,7 @@ const router = () => {
     let path = location.hash.replace("#", "")
     switch (path) {
         case "":
+            homePage();
             getArticles();
             setModal();
             setTimeout(() => showWriteButton(), 1000);
