@@ -9,12 +9,11 @@ import './aba5c3ead0';
 import _ from 'lodash';
 import SockJS from 'sockjs-client'
 import {Stomp} from '@stomp/stompjs'
-export {userId, getArticles, callComments};
 import {setHeader, addComment, chatView, setModal, registerView, logInView, drawArticle} from './view'
 
 let DOMAIN = API_URL;
 let stompClient;
-let userId;
+export let userId;
 let loading = false;
 let scrollable = true;
 let page = 1;
@@ -37,26 +36,6 @@ $(window).scroll(()=>_.throttle(function () {
         }
     }
 }, 500))
-
-// 랜덤 UUID 만들기
-const genRandomName = length => {
-    let name = '';
-    let characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + "abcdefghijklmnopqrstuvwxyz" + "0123456789";
-    let charactersLength = characters.length;
-    for (let i = 0; i < length; i++) {
-        let number = Math.random() * charactersLength;
-        let index = Math.floor(number);
-        name += characters.charAt(index);
-    }
-    return name;
-}
-
-// 랜덤 UUID 숫자형 만들기
-const genLongNumber = length => {
-    if (length < 1) return;
-    let number = Math.random() * (10 ** (length));
-    return Math.floor(number);
-}
 
 // 카카오톡 로그인하기
 export function loginWithKakao() {
@@ -81,7 +60,7 @@ export function loginWithKakao() {
 }
 
 // 일반 로그인하기
-export function login() {
+export function loginToAuth() {
     const email = $("#exampleInputEmail1").val();
     const password = $("#exampleInputPassword1").val();
     if (!(email && password)) {
@@ -108,15 +87,15 @@ export function login() {
 }
 
 // 회원가입하기
-export function signup() {
+export function signupToAuth() {
     const email = $("#exampleInputEmail1").val();
     const name = $("#inputDefault").val();
     const phone = $("#phoneDefault").val();
     const password = $("#exampleInputPassword1").val();
-    const repassword = $("#exampleInputPassword2").val();
+    const rePassword = $("#exampleInputPassword2").val();
     let latitude;
     let longitude;
-    if (password !== repassword) {
+    if (password !== rePassword) {
         alert("패스워드가 일치하지 않습니다.")
         return;
     }
@@ -148,43 +127,6 @@ export function signup() {
             console.log(error);
         });
     setHeader();
-}
-
-// 이메일 유효성 검사
-export const checkEmail = () => {
-    const email = $("#exampleInputEmail1").val();
-    const regex = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-    if (!regex.test(email)) {
-        $("#emailHelp").text("이메일 형식이 올바르지 않습니다.");
-        $("#submit").attr("disabled", true);
-    } else {
-        $("#emailHelp").text("");
-    }
-}
-
-// 자동으로 전화번호 형태 만들기
-export const autoHyphen = (target) => {
-    target.value = target.value
-        .replace(/[^0-9]/, '')
-        .replace(/^(\d{2,3})(\d{3,4})(\d{4})$/, `$1-$2-$3`);
-}
-
-// 비밀 번호 유효성 검사
-export const passwordOK = () => {
-    const password = $("#exampleInputPassword1").val();
-    const repassword = $("#exampleInputPassword2").val();
-    const regex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/;
-    if (!regex.test(password)) {
-        $("#pwdHelp").text("비밀번호 양식이 올바르지 않습니다. (영문,소문자 8자 이상)");
-        $("#submit").attr("disabled", true);
-    } else if (repassword && (password !== repassword)) {
-        $("#repwdHelp").text("비밀번호와 확인이 일치하지 않습니다.");
-        $("#submit").attr("disabled", true);
-    } else {
-        $("#pwdHelp").text("");
-        $("#repwdHelp").text("");
-        $("#submit").attr("disabled", false);
-    }
 }
 
 // 댓글 달기 창 토글
@@ -233,7 +175,7 @@ export function connect() {
 }
 
 // 채팅 신청
-export function letsMeet(articleId, commenterId, userId) {
+export function letsChitChat(articleId, commenterId, userId) {
     if (!(articleId && commenterId && userId)) return;
     const body = {
         title: `새로운 대화 ${articleId}`,
@@ -313,12 +255,6 @@ let getMessageText = () => {
     return $('.message_input').val();
 }
 
-export const _keyup = () => {
-    if (event.which === 13) {
-        sendMessage();
-    }
-};
-
 export const sendMessage = () => {
     send(getMessageText());
 }
@@ -342,7 +278,7 @@ export function toast(username, title, createdAt, content) {
 }
 
 // 글 작성하기
-export function Write() {
+export function writeArticle() {
     userId = parseInt(localStorage.getItem("userId"));
     const formData = new FormData();
     formData.append('userId', userId)
@@ -454,7 +390,7 @@ const getArticles = () => {
 };
 
 // 댓글 리스트 호출
-function callComments(idx) {
+export function callComments(idx) {
     axios
         .get(`${DOMAIN}/api/comments/${idx}`)
         .then((response) => {
@@ -465,13 +401,6 @@ function callComments(idx) {
         })
 }
 
-// 쿠키 가져오기
-export function getCookie(name) {
-    const value = "; " + document.cookie;
-    const parts = value.split("; " + name + "=");
-    if (parts.length === 2) return parts.pop().split(";").shift();
-}
-
 // 로컬 스토리지 초기화(로그아웃)
 const logOut = () => {
     localStorage.clear();
@@ -480,7 +409,7 @@ const logOut = () => {
 }
 
 // 해시태그에서 특정 파라미터 추출하기
-function extractParam(word) {
+export function extractParam(word) {
     return window.location.hash.split(word + "=").pop()
 }
 

@@ -4,19 +4,21 @@ import moment from "moment";
 import {
     userId,
     removeComment,
-    letsMeet,
+    letsChitChat,
     sendMessage,
-    _keyup,
     loginWithKakao,
-    passwordOK,
-    login,
-    signup,
-    autoHyphen, checkEmail, Write, toggleComment, writeComment, editArticle, deleteArticle
+    loginToAuth,
+    signupToAuth,
+    writeArticle,
+    toggleComment,
+    writeComment,
+    editArticle,
+    deleteArticle
 } from './index'
-export {setModal, setHeader, showWriteButton, chatView, addComment, logInView, registerView, drawArticle};
+import {autoHyphen, checkEmail, passwordOK, senseEnter,} from './utils'
 
 // 로그인한 사용자인지 판별 후 리퀘스트헤더+내비바 셋팅
-function setHeader() {
+export function setHeader() {
     let token = localStorage.getItem("token");
     if (!token) {
         $(".navbar-nav.me-auto").html(`
@@ -46,7 +48,7 @@ function setHeader() {
 }
 
 // 글쓰기 버튼(fixed) 호출
-const showWriteButton = () => {
+export const showWriteButton = () => {
     let token = localStorage.getItem("token");
     if (!token) {
         alert("로그인 후에 이용할 수 있습니다.")
@@ -61,7 +63,7 @@ const showWriteButton = () => {
 }
 
 // 댓글 생성
-function addComment(idx, data) {
+export function addComment(idx, data) {
     let {content, createdAt, user} = data;
     $(`#comment-list-${idx}`).append(`
     <li href="#" class="list-group-item list-group-item-action">
@@ -69,17 +71,17 @@ function addComment(idx, data) {
             <small class="mb-1"><small class="mb-1 tit">${user.name}</small>
             ${moment(createdAt).fromNow()}</small>
             ${userId === user.id
-            ? `<button id="removeComment-${data.id}" type="button" class="btn-close small" aria-label="remove"></button>`
-            : `<button id="letsMeet-${data.id}" class="badge bg-success rounded-pill">chat</button>`}
+        ? `<button id="removeComment-${data.id}" type="button" class="btn-close small" aria-label="remove"></button>`
+        : `<button id="letsMeet-${data.id}" class="badge bg-success rounded-pill">chat</button>`}
       </div>
       <p class="mb-1">${content}</small>
     </li>`);
-    $(document).on("click", `#removeComment-${data.id}`, ()=>removeComment(idx, data.id))
-    $(document).on("click", `#letsMeet-${data.id}`, ()=>letsMeet(idx, user.id, userId))
+    $(document).on("click", `#removeComment-${data.id}`, () => removeComment(idx, data.id))
+    $(document).on("click", `#letsMeet-${data.id}`, () => letsChitChat(idx, user.id, userId))
 }
 
 // 채팅 화면
-function chatView() {
+export function chatView() {
     $("main").html(`
         <div class="chat_window">
             <div class="top_menu">
@@ -109,12 +111,12 @@ function chatView() {
                 </div>
             </li>
         </div>`)
-    $(document).on("click", ".send_message", ()=>sendMessage())
-    $(document).on("keyup", ".message_input", ()=>_keyup())
+    $(document).on("click", ".send_message", () => sendMessage())
+    $(document).on("keyup", ".message_input", () => senseEnter(sendMessage))
 }
 
 // 로그인 화면
-function logInView() {
+export function logInView() {
     $("main").html(`
     <div class="col-lg-3 col-sm-4 m-auto">
         <form action="">
@@ -136,13 +138,13 @@ function logInView() {
         </form>
         <a class="text-success" href="#signup">let me signup</a>
     </div>`);
-    $(document).on("click", "#custom-login-btn", ()=>loginWithKakao())
-    $(document).on("click", "#submit-login", ()=>login())
-    $(document).on("input", "#exampleInputPassword1", ()=>passwordOK())
+    $(document).on("click", "#custom-login-btn", () => loginWithKakao())
+    $(document).on("click", "#submit-login", () => loginToAuth())
+    $(document).on("input", "#exampleInputPassword1", () => passwordOK())
 }
 
 // 회원가입 화면
-function registerView() {
+export function registerView() {
     $("main").html(`
     <div class="col-lg-3 col-sm-4 m-auto">
          <form action="" style="display: grid;">
@@ -173,22 +175,22 @@ function registerView() {
              </div>
              <div class="form-group">
                  <label class="form-label-sm mt-2" for="exampleInputPassword2">re-Password</label>
-                 <input aria-describedby="repwdHelp" class="form-control" id="exampleInputPassword2"
+                 <input aria-describedby="re-password-help" class="form-control" id="exampleInputPassword2"
                      placeholder="confirm password" type="password">
-                 <small class="form-text text-muted" id="repwdHelp"></small>
+                 <small class="form-text text-muted" id="re-password-help"></small>
              </div>
              <button class="btn mt-3 btn-lg btn-success" disabled id="submit-register" type="button">Register
              </button>
          </form>
          <a class="text-success" href="#signin">let me signin</a></div>`);
-    $(document).on("input", "#exampleInputEmail1", ()=>checkEmail())
-    $(document).on("input", "#phoneDefault", ()=>autoHyphen())
-    $(document).on("input", "#exampleInputPassword1", ()=>passwordOK())
-    $(document).on("input", "#submit-register", ()=>signup())
+    $(document).on("input", "#exampleInputEmail1", () => checkEmail())
+    $(document).on("input", "#phoneDefault", () => autoHyphen())
+    $(document).on("input", "#exampleInputPassword1", () => passwordOK())
+    $(document).on("input", "#submit-register", () => signupToAuth())
 }
 
 // 게시글 작성 모달 셋팅
-function setModal() {
+export function setModal() {
     $("main").append(`
     <div aria-hidden="true" aria-labelledby="staticBackdropLabel" class="modal fade" data-bs-backdrop="static"
         data-bs-keyboard="false" id="staticBackdrop" tabindex="-1">
@@ -220,11 +222,11 @@ function setModal() {
         </div>
     </div>`)
     setTimeout(() => showWriteButton(), 1000);
-    $(document).on("click", "#modal-write-button", ()=>Write())
+    $(document).on("click", "#modal-write-button", () => writeArticle())
 }
 
 
-const drawArticle = (article) => {
+export const drawArticle = (article) => {
     const {title, content, user, imagePath, imageName} = article;
     let temp_html = `<!-- Card -->
         <div class="col-xs-12 col-sm-6 col-md-4 mx-auto">
@@ -263,8 +265,8 @@ const drawArticle = (article) => {
     } else {
         $("#articles-body").append(temp_html.replace("{{__is_this_yours?__}}", no_not_mine));
     }
-    $(document).on("click", `#toggleComment-${article.id}`, ()=>toggleComment(article.id))
-    $(document).on("click", `#button-addon2-${article.id}`, ()=>writeComment(article.id))
-    $(document).on("click", `#editArticle-${article.id}`, ()=>editArticle(article.id))
-    $(document).on("click", `#deleteArticle-${article.id}`, ()=>deleteArticle(article.id))
+    $(document).on("click", `#toggleComment-${article.id}`, () => toggleComment(article.id))
+    $(document).on("click", `#button-addon2-${article.id}`, () => writeComment(article.id))
+    $(document).on("click", `#editArticle-${article.id}`, () => editArticle(article.id))
+    $(document).on("click", `#deleteArticle-${article.id}`, () => deleteArticle(article.id))
 }
