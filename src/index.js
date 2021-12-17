@@ -12,7 +12,7 @@ import {Stomp} from '@stomp/stompjs'
 export {userId, getArticles, callComments};
 import {setHeader, addComment, chatView, setModal, registerView, logInView, drawArticle} from './view'
 
-let API_URL;
+let DOMAIN = API_URL;
 let stompClient;
 let userId;
 let loading = false;
@@ -22,7 +22,7 @@ Kakao.init("e1289217c77f4f46dc511544f119d102");
 window.onload = () => setHeader()
 
 // 무-한 스크롤 무야호
-window.onscroll = _.throttle(function () {
+$(window).scroll(()=>_.throttle(function () {
     const {innerHeight} = window;
     const {scrollHeight} = document.body;
     const scrollTop =
@@ -36,7 +36,7 @@ window.onscroll = _.throttle(function () {
             }
         }
     }
-}, 500)
+}, 500))
 
 // 랜덤 UUID 만들기
 const genRandomName = length => {
@@ -64,7 +64,7 @@ export function loginWithKakao() {
         success: function (authObj) {
             console.log(authObj)
 
-            axios.post(`${API_URL}/user/kakao`, {'token': `${authObj['access_token']}`})
+            axios.post(`${DOMAIN}/user/kakao`, {'token': `${authObj['access_token']}`})
                 .then(response => {
                     console.log(response)
                     localStorage.setItem("token", response.data['token']);
@@ -87,7 +87,7 @@ export function login() {
     if (!(email && password)) {
         alert("올바른 아이디와 비밀번호를 입력해주세요.")
     }
-    axios.post(`${API_URL}/user/signin`, {
+    axios.post(`${DOMAIN}/user/signin`, {
         email: email,
         password: password,
     })
@@ -130,7 +130,7 @@ export function signup() {
             latitude = 37.49798901601007;
             longitude = 127.03796438656106;
         });
-    axios.post(`${API_URL}/user/signup`, {
+    axios.post(`${DOMAIN}/user/signup`, {
         email,
         name,
         phoneNumber: phone,
@@ -195,7 +195,7 @@ export function toggleComment(idx) {
 // 웹소켓 연결 및 구독 설정
 export function connect() {
     userId = parseInt(localStorage.getItem("userId"));
-    let socket = new SockJS(`${API_URL}/ws-stomp`);
+    let socket = new SockJS(`${DOMAIN}/ws-stomp`);
     stompClient = Stomp.over(socket);
     stompClient.connect({}, function (frame) {
         // setConnected(true);
@@ -239,7 +239,7 @@ export function letsMeet(articleId, commenterId, userId) {
         title: `새로운 대화 ${articleId}`,
         active: true
     }
-    axios.post(`${API_URL}/api/room`, body)
+    axios.post(`${DOMAIN}/api/room`, body)
         .then((response) => {
             let {roomSubscribeId} = response.data;
             console.log(response.data);
@@ -350,7 +350,7 @@ export function Write() {
     if (typeof $formFile != 'undefined') formData.append("file", $formFile);
     formData.append('title', $("#exampleFormControlInput1").val())
     formData.append('content', $("#exampleFormControlTextarea1").val())
-    axios.post(`${API_URL}/api/articles`, formData)
+    axios.post(`${DOMAIN}/api/articles`, formData)
         .then(function (response) {
             console.log(response)
             window.location.reload();
@@ -364,14 +364,14 @@ export function Write() {
 }
 
 export function editArticle(idx) {
-    axios.get(`${API_URL}/api/article/${idx}`)
+    axios.get(`${DOMAIN}/api/article/${idx}`)
         .then(response => {
             let {id, title, content, user} = response.data;
             let answer = window.prompt("수정할 내용을 입력해주세요.", content)
             if (answer) {
                 let send = {id, title, content: answer, userId};
                 console.log(send)
-                axios.put(`${API_URL}/api/article`, send).then(() => window.location.reload());
+                axios.put(`${DOMAIN}/api/article`, send).then(() => window.location.reload());
             }
         })
 }
@@ -380,7 +380,7 @@ export function editArticle(idx) {
 export function deleteArticle(idx) {
     userId = parseInt(localStorage.getItem("userId"));
     axios
-        .delete(`${API_URL}/api/article/${idx}`)
+        .delete(`${DOMAIN}/api/article/${idx}`)
         .then(function (response) {
             console.log(response);
             window.location.reload();
@@ -394,15 +394,15 @@ export function deleteArticle(idx) {
 // 댓글 작성하기
 export function writeComment(idx) {
     userId = parseInt(localStorage.getItem("userId"));
-    let commentWriteBtn = $(`#commentWrite-${idx}`);
-    let content = commentWriteBtn.val();
-    commentWriteBtn.val("");
+    let commentWrite = $(`#commentWrite-${idx}`);
+    let content = commentWrite.val();
+    commentWrite.val("");
     console.log(content);
     const body = {articleId: idx, userId, content}
-    axios.post(`${API_URL}/api/comment`, body)
+    axios.post(`${DOMAIN}/api/comment`, body)
         .then(({data}) => {
             stompClient.send(`/sub/comment/notice/all`,
-                {"act": "ADD"}, JSON.stringify({idx: idx, data: data}))
+                {"act": "ADD"}, JSON.stringify({idx, data}))
         })
         .catch(function (error) {
             // handle error
@@ -412,7 +412,7 @@ export function writeComment(idx) {
 
 // 댓글 삭제하기
 export function removeComment(idx, id) {
-    axios.delete(`${API_URL}/api/comment/${id}`)
+    axios.delete(`${DOMAIN}/api/comment/${id}`)
         .then(({data}) => console.log(data))
         .then(() => {
             stompClient.send(`/sub/comment/notice/all`,
@@ -433,7 +433,7 @@ const getArticles = () => {
     loading = true;
     userId = parseInt(localStorage.getItem("userId"));
     axios
-        .get(`${API_URL}/api/articles?page=${page}`)
+        .get(`${DOMAIN}/api/articles?page=${page}`)
         .then(function (response) {
             const {data} = response;
             if (!data.length) {
@@ -441,8 +441,8 @@ const getArticles = () => {
             }
             data.forEach((article) => {
                 drawArticle(article)
-                callComments(id);
-                $(`#commentEdit-${id}`).hide();
+                callComments(article.id);
+                $(`#commentEdit-${article.id}`).hide();
             });
             loading = false;
             page++;
@@ -456,7 +456,7 @@ const getArticles = () => {
 // 댓글 리스트 호출
 function callComments(idx) {
     axios
-        .get(`${API_URL}/api/comments/${idx}`)
+        .get(`${DOMAIN}/api/comments/${idx}`)
         .then((response) => {
             let {data} = response
             data.forEach((comment) => {

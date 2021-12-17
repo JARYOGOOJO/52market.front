@@ -225,7 +225,7 @@ function setModal() {
 
 
 const drawArticle = (article) => {
-    const {id, title, content, user, imagePath, imageName} = article;
+    const {title, content, user, imagePath, imageName} = article;
     let temp_html = `<!-- Card -->
         <div class="col-xs-12 col-sm-6 col-md-4 mx-auto">
             <div class="card" style="margin: 10px; min-width: 230px;">
@@ -241,29 +241,30 @@ const drawArticle = (article) => {
             <!--Text-->
             <p class="card-text">${content}</p>
             <!-- Provides extra visual weight and identifies the primary action in a set of buttons -->
-            <button id="toggleComment-${id}" title="comment" type="button" class="btn btn-success">
+            <button id="toggleComment-${article.id}" title="comment" type="button" class="btn btn-success">
             <i class="fas fa-comments"></i></button>
             {{__is_this_yours?__}}
             </div>
-            <input id="commentWrite-${id}" class="form-control" aria-describedby="button-addon2">
-            <label for="floatingInput">Leave a Comment...</label>
-            <button class="btn btn-success" id="app.writeComment(${id})" id="button-addon2">Button</button>
+            <div id="commentEdit-${article.id}" class="input-group m-3 form-floating">
+                <input id="commentWrite-${article.id}" class="form-control" aria-describedby="button-addon2-${article.id}">
+                <label for="floatingInput">Leave a Comment...</label>
+                <button class="btn btn-success" id="button-addon2-${article.id}">Button</button>
             </div>
-            <ul class="list-group" id="comment-list-${id}">
+            <ul class="list-group" id="comment-list-${article.id}">
             </ul></div></div>`;
     const no_not_mine = "";
     const my_contents = `
-        <button id="editArticle-${id}" title="edit" type="button" class="btn btn-success">
+        <button id="editArticle-${article.id}" title="edit" type="button" class="btn btn-success">
         <i class="far fa-edit"></i></button>
-        <button id="deleteArticle-${id}" title="delete" type="button" class="btn btn-success">
+        <button id="deleteArticle-${article.id}" title="delete" type="button" class="btn btn-success">
         <i class="fas fa-trash-alt"></i></button>`
     if (user.id === userId) {
         $("#articles-body").append(temp_html.replace("{{__is_this_yours?__}}", my_contents));
     } else {
         $("#articles-body").append(temp_html.replace("{{__is_this_yours?__}}", no_not_mine));
     }
-    $(document).on("click", `#toggleComment-${id}`, ()=>toggleComment(id))
-    $(document).on("click", `#commentWrite-${id}`, ()=>writeComment(id))
-    $(document).on("click", `#editArticle-${id}`, ()=>editArticle(id))
-    $(document).on("click", `#deleteArticle-${id}`, ()=>deleteArticle(id))
+    $(document).on("click", `#toggleComment-${article.id}`, ()=>toggleComment(article.id))
+    $(document).on("click", `#button-addon2-${article.id}`, ()=>writeComment(article.id))
+    $(document).on("click", `#editArticle-${article.id}`, ()=>editArticle(article.id))
+    $(document).on("click", `#deleteArticle-${article.id}`, ()=>deleteArticle(article.id))
 }
