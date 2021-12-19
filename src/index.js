@@ -9,7 +9,8 @@ import './aba5c3ead0'
 import _ from 'lodash'
 import SockJS from 'sockjs-client'
 import {Stomp} from '@stomp/stompjs'
-import {setHeader, addComment, chatView, setModal, registerView, logInView, drawArticle} from './view'
+import {setHeader, addComment, chatView, setModal, registerView, logInView, drawArticle, homePage} from './view'
+import {startsWith} from "lodash/string";
 
 let DOMAIN = API_URL
 let stompClient
@@ -179,6 +180,19 @@ export function connect() {
     })
 }
 
+function chatIN (roomSubscribeId) {
+    if (!stompClient) connect()
+    console.log(roomSubscribeId)
+    stompClient.subscribe(`/sub/chat/${roomSubscribeId}`, greeting => {
+        console.log(greeting)
+        take(JSON.parse(greeting.body))
+    })
+}
+
+const chatOUT = (roomSubscribeId) => {
+    return stompClient.unsubscribe(`/sub/chat/${roomSubscribeId}`)
+}
+
 // 채팅 신청
 export function letsChitChat(articleId, commenterId, userId) {
     if (!(articleId && commenterId && userId)) return
@@ -198,17 +212,6 @@ export function letsChitChat(articleId, commenterId, userId) {
             let message = {userId, content, targetId: commenterId}
             stompClient.send(`/pub/new/notices`, {}, JSON.stringify(message))
         })
-}
-
-const chatIN = (roomSubscribeId) => {
-    stompClient.subscribe(`/sub/chat/${roomSubscribeId}`, (greeting) => {
-        console.log(greeting)
-        take(JSON.parse(greeting.body))
-    })
-}
-
-const chatOUT = (roomSubscribeId) => {
-    return stompClient.unsubscribe(`/sub/chat/${roomSubscribeId}`)
 }
 
 // 채팅 메세지 객체 (함수형 프로그래밍)
@@ -373,14 +376,6 @@ export function removeComment(idx, id) {
         })
 }
 
-// 홈 셋팅
-const homePage = () => {
-    let div = document.createElement("div")
-    div.className = "card-deck"
-    div.id = "articles-body"
-    $("main > div").replaceWith(div)
-}
-
 // 게시글 불러오기
 const getArticles = () => {
     loading = true
@@ -426,7 +421,7 @@ const logOut = () => {
 }
 
 // 해시태그에서 특정 파라미터 추출하기
-export function extractParam(word) {
+function extractParam(word) {
     return window.location.hash.split(word + "=").pop()
 }
 
@@ -436,30 +431,23 @@ const router = () => {
     userSubscribeId = localStorage.getItem("userSubscribeId")
     userId = parseInt(localStorage.getItem("userId"))
     connect()
-    switch (path) {
-        case "":
-            homePage()
-            getArticles()
-            setModal()
-            break
-        case "signup":
-            registerView()
-            break
-        case "login":
-            logInView()
-            break
-        case "chat":
-            chatView()
-            break
-        case "logout":
-            logOut()
-            break
-    }
     page = 1
-    if (path.startsWith("chat")) {
+    if (_.startsWith(path, "chat")) {
         chatView()
-        let roomSubscribeId = extractParam('room')
-        chatIN(roomSubscribeId)
+        setTimeout(()=>{
+            let room = extractParam('room')
+            chatIN(room)
+        }, 1000)
+    } else if (path === "signup") {
+        registerView()
+    } else if (path === "login") {
+        logInView()
+    } else if (path === "logout") {
+        logOut()
+    } else if (path === "") {
+        homePage()
+        getArticles()
+        setModal()
     }
 }
 window.addEventListener('hashchange', router)

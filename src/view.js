@@ -83,6 +83,14 @@ export function addComment(idx, data) {
     })
 }
 
+// 홈 셋팅
+export const homePage = () => {
+    let div = document.createElement("div")
+    div.className = "card-deck"
+    div.id = "articles-body"
+    $("main > div").replaceWith(div)
+}
+
 // 채팅 화면
 export function chatView() {
     $("main").html(`
