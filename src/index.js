@@ -10,7 +10,6 @@ import _ from 'lodash'
 import SockJS from 'sockjs-client'
 import {Stomp} from '@stomp/stompjs'
 import {setHeader, addComment, chatView, setModal, registerView, logInView, drawArticle, homePage} from './view'
-import {startsWith} from "lodash/string";
 
 let DOMAIN = API_URL
 let stompClient
@@ -184,8 +183,10 @@ function chatIN (roomSubscribeId) {
     if (!stompClient) connect()
     console.log(roomSubscribeId)
     stompClient.subscribe(`/sub/chat/${roomSubscribeId}`, greeting => {
-        console.log(greeting)
-        take(JSON.parse(greeting.body))
+        let topic = JSON.parse(greeting.body)
+        if (userId !== topic["senderId"]) {
+            take(topic)
+        }
     })
 }
 

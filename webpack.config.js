@@ -49,5 +49,6 @@ module.exports = (env) => {
                 API_URL: JSON.stringify(process.env.API_URL)
             })
         ],
+        devtool: "eval-cheap-source-map",
     }
 };
