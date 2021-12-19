@@ -147,12 +147,12 @@ export function connect() {
     stompClient.connect({}, function (frame) {
         console.log('Connected: ' + frame)
         stompClient.subscribe(`/sub/notice/user/${userId}`, notice => {
-            let [msg, room] = notice.body.split("room_id: ")
-            console.log(msg)
-            window.location.hash = `chat?room=${room}`
-            let body = {roomId: room, userId: userId}
+            console.log(notice)
+            let roomId = JSON.parse(notice.body).content
+            window.location.hash = `chat?room=${roomId}`
+            let body = {roomId, userId}
             stompClient.send(`/pub/api/room/enter`, {}, JSON.stringify(body))
-            chatIN(room)
+            chatIN(roomId)
         })
         stompClient.subscribe(`/sub/notice/article`, article => {
             let data = JSON.parse(article.body)
@@ -183,23 +183,26 @@ export function connect() {
 export function letsChitChat(articleId, commenterId, userId) {
     if (!(articleId && commenterId && userId)) return
     const body = {
+        userId,
+        targetId: commenterId,
         title: `새로운 대화 ${articleId}`,
         active: true
     }
     axios.post(`${DOMAIN}/api/room`, body)
         .then((response) => {
+            console.log(response)
             let {roomSubscribeId} = response.data
-            console.log(response.data)
             window.location.hash = `chat?room=${roomSubscribeId}`
             chatIN(roomSubscribeId)
-            let message = {msg: `채팅방에 초대되었습니다. room_id: ${roomSubscribeId}`, userSubscribeId: commenterId}
-            stompClient.send(`/pub/new/notice`, {}, JSON.stringify(message))
+            let content = roomSubscribeId
+            let message = {userId, content, targetId: commenterId}
+            stompClient.send(`/pub/new/notices`, {}, JSON.stringify(message))
         })
 }
 
 const chatIN = (roomSubscribeId) => {
     stompClient.subscribe(`/sub/chat/${roomSubscribeId}`, (greeting) => {
-        console.log(greeting.headers)
+        console.log(greeting)
         take(JSON.parse(greeting.body))
     })
 }
@@ -211,12 +214,12 @@ const chatOUT = (roomSubscribeId) => {
 // 채팅 메세지 객체 (함수형 프로그래밍)
 class Message {
     constructor(arg) {
-        this.msg = arg.msg
+        this.content = arg.content
         this.message_side = arg.message_side
         this.draw = (_this => function () {
             let $message
             $message = $($('.message_template').clone().html())
-            $message.addClass(_this.message_side).find('.text').html(_this.msg)
+            $message.addClass(_this.message_side).find('.text').html(_this.content)
             $('.messages').append($message)
             return setTimeout(function () {
                 return $message.addClass('appeared')
@@ -226,30 +229,30 @@ class Message {
     }
 }
 
-const send = function (msg) {
+const send = function (content) {
     let roomSubscribeId = extractParam('room')
     userId = parseInt(localStorage.getItem("userId"))
     $('.message_input').val('')
     let $messages = $('.messages')
     let message = new Message({
-        msg: msg,
+        content,
         message_side: "right"
     })
-    let shot = {msg, userId}
-    stompClient.send(`/pub/messages`, {}, JSON.stringify(shot))
+    let shot = {...message, userId, roomSubscribeId}
+    stompClient.send(`/pub/chat/messages`, {}, JSON.stringify(shot))
     message.draw()
     return $messages.animate({scrollTop: $messages.prop('scrollHeight')}, 300)
 }
 
 let take = function (body) {
-    let {msg, userId} = body
+    let {content, userId} = body
     let user = parseInt(localStorage.getItem("userId"))
     if (user === parseInt(userId)) {
         return
     }
     let $messages = $('.messages')
     let message = new Message({
-        msg: msg,
+        content,
         message_side: "left"
     })
     message.draw()
@@ -450,6 +453,7 @@ const router = () => {
             break
         case "logout":
             logOut()
+            break
     }
     page = 1
     if (path.startsWith("chat")) {
@@ -458,7 +462,6 @@ const router = () => {
         chatIN(roomSubscribeId)
     }
 }
-
 window.addEventListener('hashchange', router)
 
 router()

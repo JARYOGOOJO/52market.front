@@ -77,7 +77,10 @@ export function addComment(idx, data) {
       <p class="mb-1">${content}</small>
     </li>`)
     $(document).on("click", `#removeComment-${data.id}`, () => removeComment(idx, data.id))
-    $(document).on("click", `#letsMeet-${data.id}`, () => letsChitChat(idx, user.id, userId))
+    $(document).on("click", `#letsMeet-${data.id}`, () => {
+        console.log(idx, user.id, userId)
+        letsChitChat(idx, user.id, userId)
+    })
 }
 
 // 채팅 화면
