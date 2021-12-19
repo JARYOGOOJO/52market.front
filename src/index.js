@@ -88,17 +88,8 @@ export function loginToAuth() {
 
 // 회원가입하기
 export function signupToAuth() {
-    const email = $("#exampleInputEmail1").val();
-    const name = $("#inputDefault").val();
-    const phone = $("#phoneDefault").val();
-    const password = $("#exampleInputPassword1").val();
-    const rePassword = $("#exampleInputPassword2").val();
     let latitude;
     let longitude;
-    if (password !== rePassword) {
-        alert("패스워드가 일치하지 않습니다.")
-        return;
-    }
     navigator
         .geolocation
         .getCurrentPosition((position) => {
@@ -109,6 +100,15 @@ export function signupToAuth() {
             latitude = 37.49798901601007;
             longitude = 127.03796438656106;
         });
+    const email = $("#exampleInputEmail1").val();
+    const name = $("#inputDefault").val();
+    const phone = $("#phoneDefault").val();
+    const password = $("#exampleInputPassword1").val();
+    const rePassword = $("#exampleInputPassword2").val();
+    if (password !== rePassword) {
+        alert("패스워드가 일치하지 않습니다.")
+        return;
+    }
     axios.post(`${DOMAIN}/user/signup`, {
         email,
         name,
@@ -140,9 +140,8 @@ export function connect() {
     let socket = new SockJS(`${DOMAIN}/ws-stomp`);
     stompClient = Stomp.over(socket);
     stompClient.connect({}, function (frame) {
-        // setConnected(true);
         console.log('Connected: ' + frame);
-        stompClient.subscribe(`/sub/user/notice/${userId}`, notice => {
+        stompClient.subscribe(`/sub/notice/user/${userId}`, notice => {
             let [msg, room] = notice.body.split("room_id: ")
             console.log(msg)
             window.location.hash = `chat?room=${room}`
@@ -150,17 +149,14 @@ export function connect() {
             stompClient.send(`/pub/api/room/enter`, {}, JSON.stringify(body))
             chatIN(room)
         });
-        stompClient.subscribe(`/sub/chat/all`, chat => {
-            console.log(JSON.parse(chat.body))
-        });
-        stompClient.subscribe(`/sub/article/notice/all`, article => {
+        stompClient.subscribe(`/sub/notice/article`, article => {
             let {data} = JSON.parse(article.body)
             console.log(data)
             let {user, title, createdAt, content} = data;
             let username = user.name;
             toast(username, title, createdAt, content);
         });
-        stompClient.subscribe(`/sub/comment/notice/all`, cmt => {
+        stompClient.subscribe(`/sub/notice/comment`, cmt => {
             console.log(cmt)
             if (cmt.headers.act === "ADD") {
                 let {idx, data} = JSON.parse(cmt.body)
@@ -188,19 +184,19 @@ export function letsChitChat(articleId, commenterId, userId) {
             window.location.hash = `chat?room=${roomSubscribeId}`;
             chatIN(roomSubscribeId)
             let message = {msg: `채팅방에 초대되었습니다. room_id: ${roomSubscribeId}`, userSubscribeId: commenterId}
-            stompClient.send(`/pub/user/notice`, {}, JSON.stringify(message))
+            stompClient.send(`/pub/new/notice`, {}, JSON.stringify(message))
         })
 }
 
 const chatIN = (roomSubscribeId) => {
-    stompClient.subscribe(`/sub/chat/room/${roomSubscribeId}`, (greeting) => {
+    stompClient.subscribe(`/sub/chat/${roomSubscribeId}`, (greeting) => {
         console.log(greeting.headers)
         take(JSON.parse(greeting.body));
     });
 }
 
 const chatOUT = (roomSubscribeId) => {
-    return stompClient.unsubscribe(`/sub/chat/room/${roomSubscribeId}`)
+    return stompClient.unsubscribe(`/sub/chat/${roomSubscribeId}`)
 }
 
 // 채팅 메세지 객체 (함수형 프로그래밍)
@@ -231,7 +227,7 @@ const send = function (msg) {
         message_side: "right"
     });
     let shot = {msg, userId};
-    stompClient.send(`/sub/chat/room/${roomSubscribeId}`, {}, JSON.stringify(shot))
+    stompClient.send(`/pub/messages`, {}, JSON.stringify(shot))
     message.draw();
     return $messages.animate({scrollTop: $messages.prop('scrollHeight')}, 300);
 };
