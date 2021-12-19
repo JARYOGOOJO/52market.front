@@ -14,6 +14,7 @@ import {setHeader, addComment, chatView, setModal, registerView, logInView, draw
 let DOMAIN = API_URL
 let stompClient
 export let userId
+let userSubscribeId
 let loading = false
 let scrollable = true
 let page = 1
@@ -140,6 +141,7 @@ export function toggleComment(idx) {
 // 웹소켓 연결 및 구독 설정
 export function connect() {
     userId = parseInt(localStorage.getItem("userId"))
+    userSubscribeId = localStorage.getItem("userSubscribeId")
     let socket = new SockJS(`${DOMAIN}/ws-stomp`)
     stompClient = Stomp.over(socket)
     stompClient.connect({}, function (frame) {
@@ -160,15 +162,15 @@ export function connect() {
         })
         stompClient.subscribe(`/sub/notice/comment`, cmt => {
             let body = JSON.parse(cmt.body)
+            let {type, senderId, targetId} = body
             console.log(body)
-            if (body.type === "COMMENT") {
-                let {senderId, targetId} = body;
+            if (type === "COMMENT") {
                 if (senderId !== userId) {
                     $(`comment-list-${targetId}`).empty()
                     callComments(targetId)
                 }
             } else {
-                $(`#removeComment-${body.targetId}`)
+                $(`#removeComment-${targetId}`)
                     .parent().parent().remove()
             }
         })
@@ -426,6 +428,8 @@ export function extractParam(word) {
 // 모든 뷰로 이어지는 라우터
 const router = () => {
     let path = window.location.hash.replace("#", "")
+    userSubscribeId = localStorage.getItem("userSubscribeId")
+    userId = parseInt(localStorage.getItem("userId"))
     connect()
     switch (path) {
         case "":
