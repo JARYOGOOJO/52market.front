@@ -172,6 +172,8 @@ export function connect() {
             } else {
                 $(`#removeComment-${targetId}`)
                     .parent().parent().remove()
+                $(`#letsMeet-${targetId}`)
+                    .parent().parent().remove()
             }
         })
     })

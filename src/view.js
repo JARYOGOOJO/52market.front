@@ -186,7 +186,7 @@ export function registerView() {
     $(document).on("input", "#exampleInputEmail1", () => checkEmail())
     $(document).on("input", "#phoneDefault", () => autoHyphen())
     $(document).on("input", "#exampleInputPassword1", () => passwordOK())
-    $(document).on("input", "#submit-register", () => signupToAuth())
+    $(document).on("click", "#submit-register", () => signupToAuth())
 }
 
 // 게시글 작성 모달 셋팅
