@@ -48,9 +48,9 @@ export function loginWithKakao() {
             axios.post(`${DOMAIN}/user/kakao`, {'token': `${authObj['access_token']}`})
                 .then(response => {
                     console.log(response)
-                    localStorage.setItem("token", response.data['token'])
-                    localStorage.setItem("userId", response.data['userId'])
-                    localStorage.setItem("userSubscribeId", response.data['userSubscribeId'])
+                    sessionStorage.setItem("token", response.data['token'])
+                    sessionStorage.setItem("userId", response.data['userId'])
+                    sessionStorage.setItem("userSubscribeId", response.data['userSubscribeId'])
                     window.location.hash = ''
                     setHeader()
                 })
@@ -77,9 +77,9 @@ export function loginToAuth() {
             console.log(response)
             const {data} = response
             if (data) {
-                localStorage.setItem("token", response.data['token'])
-                localStorage.setItem("userId", response.data['userId'])
-                localStorage.setItem("userSubscribeId", response.data['userSubscribeId'])
+                sessionStorage.setItem("token", response.data['token'])
+                sessionStorage.setItem("userId", response.data['userId'])
+                sessionStorage.setItem("userSubscribeId", response.data['userSubscribeId'])
                 window.location.hash = ''
                 setHeader()
             }
@@ -123,9 +123,9 @@ export function signupToAuth() {
     })
         .then(function (response) {
             console.log(response)
-            localStorage.setItem("token", response.data['token'])
-            localStorage.setItem("userId", response.data['userId'])
-            localStorage.setItem("userSubscribeId", response.data['userSubscribeId'])
+            sessionStorage.setItem("token", response.data['token'])
+            sessionStorage.setItem("userId", response.data['userId'])
+            sessionStorage.setItem("userSubscribeId", response.data['userSubscribeId'])
             window.location.hash = ''
         })
         .catch(function (error) {
@@ -141,8 +141,8 @@ export function toggleComment(idx) {
 
 // 웹소켓 연결 및 구독 설정
 export function connect() {
-    userId = parseInt(localStorage.getItem("userId"))
-    userSubscribeId = localStorage.getItem("userSubscribeId")
+    userId = parseInt(sessionStorage.getItem("userId"))
+    userSubscribeId = sessionStorage.getItem("userSubscribeId")
     let socket = new SockJS(`${DOMAIN}/ws-stomp`)
     stompClient = Stomp.over(socket)
     stompClient.connect({}, function (frame) {
@@ -234,7 +234,7 @@ class Message {
 
 const send = function (content) {
     let roomSubscribeId = extractParam('room')
-    userId = parseInt(localStorage.getItem("userId"))
+    userId = parseInt(sessionStorage.getItem("userId"))
     $('.message_input').val('')
     let $messages = $('.messages')
     let message = new Message({
@@ -249,7 +249,7 @@ const send = function (content) {
 
 let take = function (body) {
     let {content, userId} = body
-    let user = parseInt(localStorage.getItem("userId"))
+    let user = parseInt(sessionStorage.getItem("userId"))
     if (user === parseInt(userId)) {
         return
     }
@@ -295,7 +295,7 @@ export function toast(title, createdAt, content) {
 
 // 글 작성하기
 export function writeArticle() {
-    userId = parseInt(localStorage.getItem("userId"))
+    userId = parseInt(sessionStorage.getItem("userId"))
     const formData = new FormData()
     formData.append('userId', userId)
     let $formFile = $("#formFile")[0].files[0]
@@ -331,7 +331,7 @@ export function editArticle(idx) {
 
 // 글 삭제하기
 export function deleteArticle(idx) {
-    userId = parseInt(localStorage.getItem("userId"))
+    userId = parseInt(sessionStorage.getItem("userId"))
     axios
         .delete(`${DOMAIN}/api/article/${idx}`)
         .then(function (response) {
@@ -346,7 +346,7 @@ export function deleteArticle(idx) {
 
 // 댓글 작성하기
 export function writeComment(idx) {
-    userId = parseInt(localStorage.getItem("userId"))
+    userId = parseInt(sessionStorage.getItem("userId"))
     let commentWrite = $(`#commentWrite-${idx}`)
     let content = commentWrite.val()
     commentWrite.val("")
@@ -368,7 +368,7 @@ export function writeComment(idx) {
 
 // 댓글 삭제하기
 export function removeComment(idx, id) {
-    userId = parseInt(localStorage.getItem("userId"))
+    userId = parseInt(sessionStorage.getItem("userId"))
     axios.delete(`${DOMAIN}/api/comment/${id}`)
         .then(() => {
             stompClient.send(`/pub/del/comments`,
@@ -379,7 +379,7 @@ export function removeComment(idx, id) {
 // 게시글 불러오기
 const getArticles = () => {
     loading = true
-    userId = parseInt(localStorage.getItem("userId"))
+    userId = parseInt(sessionStorage.getItem("userId"))
     axios
         .get(`${DOMAIN}/api/articles?page=${page}`)
         .then(function (response) {
@@ -415,7 +415,7 @@ export function callComments(idx) {
 
 // 로컬 스토리지 초기화(로그아웃)
 const logOut = () => {
-    localStorage.clear()
+    sessionStorage.clear()
     window.location.hash = "login"
     setHeader()
 }
@@ -428,8 +428,8 @@ function extractParam(word) {
 // 모든 뷰로 이어지는 라우터
 const router = () => {
     let path = window.location.hash.replace("#", "")
-    userSubscribeId = localStorage.getItem("userSubscribeId")
-    userId = parseInt(localStorage.getItem("userId"))
+    userSubscribeId = sessionStorage.getItem("userSubscribeId")
+    userId = parseInt(sessionStorage.getItem("userId"))
     connect()
     page = 1
     if (_.startsWith(path, "chat")) {

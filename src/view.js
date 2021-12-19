@@ -19,7 +19,7 @@ import {autoHyphen, checkEmail, passwordOK, senseEnter,} from './utils'
 
 // 로그인한 사용자인지 판별 후 리퀘스트헤더+내비바 셋팅
 export function setHeader() {
-    let token = localStorage.getItem("token")
+    let token = sessionStorage.getItem("token")
     if (!token) {
         $(".navbar-nav.me-auto").html(`
         <ul class="navbar-nav me-auto">
@@ -49,7 +49,7 @@ export function setHeader() {
 
 // 글쓰기 버튼(fixed) 호출
 export const showWriteButton = () => {
-    let token = localStorage.getItem("token")
+    let token = sessionStorage.getItem("token")
     if (!token) {
         alert("로그인 후에 이용할 수 있습니다.")
         location.hash = "login"
