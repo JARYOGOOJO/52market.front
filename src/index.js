@@ -160,13 +160,15 @@ export function connect() {
         })
         stompClient.subscribe(`/sub/notice/comment`, cmt => {
             let body = JSON.parse(cmt.body)
-            console.log(data)
+            console.log(body)
             if (body.type === "COMMENT") {
-                let {title, content, targetId, createdAt} = body
-                let data = {username: title, content, createdAt}
-                addComment(targetId, data)
+                let {senderId, targetId} = body;
+                if (senderId !== userId) {
+                    $(`comment-list-${targetId}`).empty()
+                    callComments(targetId)
+                }
             } else {
-                $(`#removeComment-${data.targetId}`)
+                $(`#removeComment-${body.targetId}`)
                     .parent().parent().remove()
             }
         })
@@ -342,8 +344,9 @@ export function writeComment(idx) {
     const body = {articleId: idx, userId, content}
     axios.post(`${DOMAIN}/api/comment`, body)
         .then((response) => {
-            console.log(response);
-            let {data} = response;
+            console.log(response)
+            let {data} = response
+            addComment(idx, data)
             stompClient.send(`/pub/new/comments`,
                 {}, JSON.stringify({userId, targetId: idx, ...data}))
         })
