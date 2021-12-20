@@ -20,7 +20,7 @@ module.exports = (env) => {
         output: {
             filename: 'bundle.js',
             path: path.resolve(__dirname, 'dist'),
-            library: "app",
+            // library: "app",
         },
         module: {
             rules: [
@@ -49,5 +49,6 @@ module.exports = (env) => {
                 API_URL: JSON.stringify(process.env.API_URL)
             })
         ],
+        devtool: "eval-cheap-source-map",
     }
 };
