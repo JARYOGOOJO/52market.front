@@ -35,6 +35,7 @@ export function setHeader() {
         </ul>`)
     } else {
         axios.defaults.headers.common = {Authorization: `Bearer ${token}`}
+
         $(".navbar-nav.me-auto").html(`
         <ul class="navbar-nav me-auto">
             <li class="nav-item">

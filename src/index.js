@@ -38,6 +38,13 @@ $(window).scroll(() => _.throttle(function () {
     }
 }, 500))
 
+const setToken = (data) => {
+    sessionStorage.setItem("token", data['token'])
+    localStorage.setItem("refreshToken", data['refreshToken'])
+    sessionStorage.setItem("userId", data['userId'])
+    sessionStorage.setItem("userSubscribeId", data['userSubscribeId'])
+}
+
 // 카카오톡 로그인하기
 export function loginWithKakao() {
     Kakao.Auth.login({
@@ -47,9 +54,7 @@ export function loginWithKakao() {
             axios.post(`${DOMAIN}/user/kakao`, {'token': `${authObj['access_token']}`})
                 .then(response => {
                     console.log(response)
-                    sessionStorage.setItem("token", response.data['token'])
-                    sessionStorage.setItem("userId", response.data['userId'])
-                    sessionStorage.setItem("userSubscribeId", response.data['userSubscribeId'])
+                    setToken(response.data)
                     window.location.hash = ''
                     setHeader()
                 })
@@ -76,9 +81,7 @@ export function loginToAuth() {
             console.log(response)
             const {data} = response
             if (data) {
-                sessionStorage.setItem("token", response.data['token'])
-                sessionStorage.setItem("userId", response.data['userId'])
-                sessionStorage.setItem("userSubscribeId", response.data['userSubscribeId'])
+                setToken(data)
                 window.location.hash = ''
                 setHeader()
             }
@@ -122,9 +125,7 @@ export function signupToAuth() {
     })
         .then(function (response) {
             console.log(response)
-            sessionStorage.setItem("token", response.data['token'])
-            sessionStorage.setItem("userId", response.data['userId'])
-            sessionStorage.setItem("userSubscribeId", response.data['userSubscribeId'])
+            setToken(response.data)
             window.location.hash = ''
         })
         .catch(function (error) {
@@ -139,7 +140,7 @@ export function toggleComment(idx) {
 }
 
 // 웹소켓 연결 및 구독 설정
-export function connect() {
+export const connect = async () => {
     userId = parseInt(sessionStorage.getItem("userId"))
     userSubscribeId = sessionStorage.getItem("userSubscribeId")
     let socket = new SockJS(`${DOMAIN}/ws-stomp`)
@@ -147,12 +148,11 @@ export function connect() {
     stompClient.connect({}, function (frame) {
         console.log('Connected: ' + frame)
         stompClient.subscribe(`/sub/notice/user/${userId}`, notice => {
-            console.log(notice)
-            let roomId = JSON.parse(notice.body).content
-            window.location.hash = `chat?room=${roomId}`
-            let body = {roomId, userId}
-            stompClient.send(`/pub/api/room/enter`, {}, JSON.stringify(body))
-            chatIN(roomId)
+            setTimeout(()=>{
+                console.log(notice)
+                let roomSubscribeId = JSON.parse(notice.body).content
+                window.location.hash = `chat?room=${roomSubscribeId}`
+            }, 1000)
         })
         stompClient.subscribe(`/sub/notice/article`, article => {
             let data = JSON.parse(article.body)
@@ -177,16 +177,17 @@ export function connect() {
             }
         })
     })
+    return stompClient;
 }
 
 function chatIN (roomSubscribeId) {
-    if (!stompClient) connect()
-    console.log(roomSubscribeId)
+    let body = {roomSubscribeId, userId}
+    axios.post(`${DOMAIN}/room/enter`, body).then(value => console.log(value))
     stompClient.subscribe(`/sub/chat/${roomSubscribeId}`, greeting => {
         let topic = JSON.parse(greeting.body)
         if (userId !== topic["senderId"]) {
-            take(topic)
-        }
+                take(topic)
+            }
     })
 }
 
@@ -203,7 +204,7 @@ export function letsChitChat(articleId, commenterId, userId) {
         title: `새로운 대화 ${articleId}`,
         active: true
     }
-    axios.post(`${DOMAIN}/api/room`, body)
+    axios.post(`${DOMAIN}/new/room`, body)
         .then((response) => {
             console.log(response)
             let {roomSubscribeId} = response.data
@@ -429,9 +430,9 @@ function extractParam(word) {
 // 모든 뷰로 이어지는 라우터
 const router = () => {
     let path = window.location.hash.replace("#", "")
-    userSubscribeId = sessionStorage.getItem("userSubscribeId")
-    userId = parseInt(sessionStorage.getItem("userId"))
-    connect()
+    if (!stompClient)
+        connect().then(r => console.log(r))
+    setHeader()
     page = 1
     if (_.startsWith(path, "chat")) {
         chatView()
