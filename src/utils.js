@@ -32,26 +32,6 @@ export const senseEnter = (func) => {
     }
 }
 
-// 랜덤 UUID 만들기
-const genRandomName = length => {
-    let name = ''
-    let characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + "abcdefghijklmnopqrstuvwxyz" + "0123456789"
-    let charactersLength = characters.length
-    for (let i = 0; i < length; i++) {
-        let number = Math.random() * charactersLength
-        let index = Math.floor(number)
-        name += characters.charAt(index)
-    }
-    return name
-}
-
-// 랜덤 UUID 숫자형 만들기
-const genLongNumber = length => {
-    if (length < 1) return
-    let number = Math.random() * (10 ** (length))
-    return Math.floor(number)
-}
-
 // 이메일 유효성 검사
 export const checkEmail = () => {
     const email = $("#exampleInputEmail1").val()

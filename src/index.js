@@ -308,7 +308,7 @@ export function writeArticle() {
             let body = {userId, ...data}
             stompClient.send(`/pub/new/articles`,
                 {}, JSON.stringify(body))
-            // window.location.reload()
+            window.location.reload()
         })
         .catch(function (error) {
             console.log(error)
