@@ -235,6 +235,7 @@ class Message {
 }
 
 const send = function (content) {
+    if (!content) return;
     let roomSubscribeId = extractParam('room')
     userId = parseInt(sessionStorage.getItem("userId"))
     $('.message_input').val('')
@@ -251,6 +252,7 @@ const send = function (content) {
 
 let take = function (body) {
     let {content, userId} = body
+    if (!content) return;
     let user = parseInt(sessionStorage.getItem("userId"))
     if (user === parseInt(userId)) {
         return
