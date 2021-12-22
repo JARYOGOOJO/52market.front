@@ -74,8 +74,8 @@ export function loginToAuth() {
         alert("올바른 아이디와 비밀번호를 입력해주세요.")
     }
     axios.post(`${DOMAIN}/user/signin`, {
-        email: email,
-        password: password,
+        email,
+        password,
     })
         .then(function (response) {
             console.log(response)
@@ -84,14 +84,17 @@ export function loginToAuth() {
                 setToken(data)
                 window.location.hash = ''
                 setHeader()
+                updateLocation(email)
             }
         })
         .catch(function (error) {
-            console.log(error)
+            if (error.message.endsWith(404)) {
+                window.alert("이메일과 비밀번호를 확인해 주세요")
+            }
         })
 }
 
-function updateLocation() {
+function updateLocation(email) {
     let latitude
     let longitude
     navigator
@@ -104,7 +107,7 @@ function updateLocation() {
             latitude = 37.49798901601007
             longitude = 127.03796438656106
         })
-    axios.post(`${DOMAIN}/user/location`, {latitude, longitude})
+    axios.post(`${DOMAIN}/user/location`, {email, latitude, longitude})
         .then((result)=>console.log(result))
         .catch((error)=>console.log(error))
 }
@@ -127,13 +130,17 @@ export function signupToAuth() {
         password
     })
         .then(function (response) {
-            console.log(response)
             setToken(response.data)
             window.location.hash = ''
             updateLocation()
         })
         .catch(function (error) {
-            console.log(error)
+            if (error.message.endsWith(409)) {
+                window.alert("같은 아이디의 유저가 존재합니다.")
+            } else if (error.message.endsWith(400)) {
+                console.log(error.message)
+                window.alert("올바른 값을 입력하세요.")
+            }
         })
     setHeader()
 }
