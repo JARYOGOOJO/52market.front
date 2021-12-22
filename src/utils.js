@@ -43,3 +43,4 @@ export const checkEmail = () => {
         $("#emailHelp").text("")
     }
 }
+

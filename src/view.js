@@ -13,7 +13,8 @@ import {
     toggleComment,
     writeComment,
     editArticle,
-    deleteArticle
+    deleteArticle,
+    nickNameOK
 } from './index'
 import {autoHyphen, checkEmail, passwordOK, senseEnter,} from './utils'
 
@@ -168,9 +169,10 @@ export function registerView() {
              </div>
              <div class="form-group">
                  <label class="col-form-label-sm mt-2" for="inputDefault">Name</label>
-                 <input aria-describedby="nameHelp" class="form-control" id="inputDefault"
-                     placeholder="tell us your name"
-                     type="text">
+                 <div class="input-group">
+                     <input aria-describedby="nameCheck" class="form-control" id="inputDefault" type="text" aria-label="tell us your name" placeholder="tell us your name">
+                     <button class="btn btn-primary" type="button" id="nameCheck">check</button>
+                 </div>
                  <small class="form-text text-muted" id="nameHelp"></small>
              </div>
              <div class="form-group">
@@ -194,10 +196,11 @@ export function registerView() {
              <button class="btn mt-3 btn-lg btn-success" disabled id="submit-register" type="button">Register
              </button>
          </form>
-         <a class="text-success" href="#signin">let me signin</a></div>`)
+         <a class="text-success" href="#login">let me signin</a></div>`)
     $(document).on("input", "#exampleInputEmail1", () => checkEmail())
     $(document).on("input", "#phoneDefault", () => autoHyphen())
     $(document).on("input", "#exampleInputPassword1", () => passwordOK())
+    $(document).on("click", "#nameCheck", () => nickNameOK())
     $(document).on("click", "#submit-register", () => signupToAuth())
 }
 

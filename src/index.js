@@ -150,6 +150,21 @@ export function toggleComment(idx) {
     $(`#commentEdit-${idx}`).fadeToggle()
 }
 
+export function nickNameOK() {
+    const name = $("#inputDefault").val()
+    axios.post(`${DOMAIN}/user/exists`, {name})
+        .then(result => {
+            if (result.data) {
+                window.alert("이미 존재하는 닉네임입니다.");
+                $("#nameHelp").text("다른 닉네임으로 변경 후 체크해주세요.")
+            } else {
+                window.alert("사용 가능한 닉네임입니다 :D");
+                $("#nameHelp").text("")
+            }
+        })
+        .catch(error => console.error(error))
+}
+
 // 웹소켓 연결 및 구독 설정
 export const connect = async () => {
     userId = parseInt(sessionStorage.getItem("userId"))
