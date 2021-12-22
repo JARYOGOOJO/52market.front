@@ -214,7 +214,6 @@ export function letsChitChat(articleId, commenterId, userId) {
             console.log(response)
             let {roomSubscribeId} = response.data
             window.location.hash = `chat?room=${roomSubscribeId}`
-            chatIN(roomSubscribeId)
             let content = roomSubscribeId
             let message = {userId, content, targetId: commenterId}
             stompClient.send(`/pub/new/notices`, {}, JSON.stringify(message))
