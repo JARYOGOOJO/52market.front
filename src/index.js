@@ -50,7 +50,6 @@ export function loginWithKakao() {
     Kakao.Auth.login({
         success: function (authObj) {
             console.log(authObj)
-
             axios.post(`${DOMAIN}/user/kakao`, {'token': `${authObj['access_token']}`})
                 .then(response => {
                     console.log(response)
@@ -92,8 +91,7 @@ export function loginToAuth() {
         })
 }
 
-// 회원가입하기
-export function signupToAuth() {
+function updateLocation() {
     let latitude
     let longitude
     navigator
@@ -106,9 +104,16 @@ export function signupToAuth() {
             latitude = 37.49798901601007
             longitude = 127.03796438656106
         })
+    axios.post(`${DOMAIN}/user/location`, {latitude, longitude})
+        .then((result)=>console.log(result))
+        .catch((error)=>console.log(error))
+}
+
+// 회원가입하기
+export function signupToAuth() {
     const email = $("#exampleInputEmail1").val()
     const name = $("#inputDefault").val()
-    const phone = $("#phoneDefault").val()
+    const phoneNumber = $("#phoneDefault").val()
     const password = $("#exampleInputPassword1").val()
     const rePassword = $("#exampleInputPassword2").val()
     if (password !== rePassword) {
@@ -118,15 +123,14 @@ export function signupToAuth() {
     axios.post(`${DOMAIN}/user/signup`, {
         email,
         name,
-        phoneNumber: phone,
-        password,
-        latitude,
-        longitude
+        phoneNumber,
+        password
     })
         .then(function (response) {
             console.log(response)
             setToken(response.data)
             window.location.hash = ''
+            updateLocation()
         })
         .catch(function (error) {
             console.log(error)
