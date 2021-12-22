@@ -151,6 +151,7 @@ export function logInView() {
         </form>
         <a class="text-success" href="#signup">let me signup</a>
     </div>`)
+
     $(document).on("click", "#custom-login-btn", () => loginWithKakao())
     $(document).on("click", "#submit-login", () => loginToAuth())
     $(document).on("input", "#exampleInputPassword1", () => passwordOK())
