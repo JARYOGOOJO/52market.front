@@ -88,7 +88,6 @@ export function loginToAuth() {
         })
         .catch(function (error) {
             console.log(error)
-            alert("로그인에 실패했습니다.")
         })
 }
 
@@ -187,13 +186,16 @@ export const connect = async () => {
 
 function chatIN (roomSubscribeId) {
     let body = {roomSubscribeId, userId}
-    axios.post(`${DOMAIN}/room/enter`, body).then(value => console.log(value))
-    stompClient.subscribe(`/sub/chat/${roomSubscribeId}`, greeting => {
-        let topic = JSON.parse(greeting.body)
-        if (userId !== topic["senderId"]) {
-                take(topic)
-            }
-    })
+    axios.post(`${DOMAIN}/room/enter`, body)
+        .then(value => {
+            console.log(value)
+            stompClient.subscribe(`/sub/chat/${roomSubscribeId}`, greeting => {
+                let topic = JSON.parse(greeting.body)
+                if (userId !== topic["senderId"]) {
+                    take(topic)
+                }
+            })
+        }).catch((err)=>console.log(err))
 }
 
 const chatOUT = (roomSubscribeId) => {
