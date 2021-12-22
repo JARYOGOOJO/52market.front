@@ -18,6 +18,7 @@ let userSubscribeId
 let loading = false
 let scrollable = true
 let page = 1
+let channelList = new Set();
 Kakao.init("e1289217c77f4f46dc511544f119d102")
 window.onload = () => setHeader()
 
@@ -140,7 +141,7 @@ export function signupToAuth() {
 
 // 댓글 달기 창 토글
 export function toggleComment(idx) {
-    $(`#commentEdit-${idx}`).toggle('fade')
+    $(`#commentEdit-${idx}`).fadeToggle()
 }
 
 // 웹소켓 연결 및 구독 설정
@@ -208,7 +209,7 @@ export function letsChitChat(articleId, commenterId, userId) {
         title: `새로운 대화 ${articleId}`,
         active: true
     }
-    axios.post(`${DOMAIN}/new/room`, body)
+    return axios.post(`${DOMAIN}/new/room`, body)
         .then((response) => {
             console.log(response)
             let {roomSubscribeId} = response.data
@@ -398,7 +399,6 @@ const getArticles = () => {
             data.forEach((article) => {
                 drawArticle(article)
                 callComments(article.id)
-                $(`#commentEdit-${article.id}`).hide()
             })
             loading = false
             page++
@@ -430,7 +430,9 @@ const logOut = () => {
 
 // 해시태그에서 특정 파라미터 추출하기
 function extractParam(word) {
-    return window.location.hash.split(word + "=").pop()
+    let hash = window.location.hash
+    let regex = new RegExp(`(?!${word}=)([a-zA-Z0-9]){16}`)
+    return regex.exec(hash)[0]
 }
 
 // 모든 뷰로 이어지는 라우터
@@ -444,7 +446,7 @@ const router = () => {
         chatView()
         setTimeout(()=>{
             let room = extractParam('room')
-            chatIN(room)
+            return chatIN(room)
         }, 1000)
     } else if (path === "signup") {
         registerView()
