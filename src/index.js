@@ -20,7 +20,6 @@ let scrollable = true
 let page = 1
 let latitude
 let longitude
-let channelList = new Set();
 Kakao.init("e1289217c77f4f46dc511544f119d102")
 window.onload = () => setHeader()
 
@@ -50,7 +49,7 @@ const setToken = (data) => {
 
 // 카카오톡 로그인하기
 export function loginWithKakao() {
-    Kakao.Auth.login({
+    Kakao?.Auth.login({
         success: function (authObj) {
             console.log(authObj)
             axios.post(`${DOMAIN}/user/kakao`, {'token': `${authObj['access_token']}`})
@@ -222,7 +221,10 @@ function chatIN (roomSubscribeId) {
                     take(topic)
                 }
             })
-        }).catch((err)=>console.log(err))
+        }).catch((err)=>{
+            console.log(err)
+            chatOUT(roomSubscribeId)
+    })
 }
 
 const chatOUT = (roomSubscribeId) => {
@@ -356,7 +358,7 @@ export function writeArticle() {
 export function editArticle(idx) {
     axios.get(`${DOMAIN}/api/article/${idx}`)
         .then(response => {
-            let {id, title, content, user} = response.data
+            let {id, title, content} = response.data
             let answer = window.prompt("수정할 내용을 입력해주세요.", content)
             if (answer) {
                 let send = {id, title, content: answer, userId}
