@@ -18,6 +18,8 @@ let userSubscribeId
 let loading = false
 let scrollable = true
 let page = 1
+let latitude
+let longitude
 let channelList = new Set();
 Kakao.init("e1289217c77f4f46dc511544f119d102")
 window.onload = () => setHeader()
@@ -57,6 +59,8 @@ export function loginWithKakao() {
                     setToken(response.data)
                     window.location.hash = ''
                     setHeader()
+                    let {email} = response.data
+                    updateLocation(email)
                 })
                 .catch((err) => console.log(err))
         },
@@ -95,21 +99,22 @@ export function loginToAuth() {
 }
 
 function updateLocation(email) {
-    let latitude
-    let longitude
     navigator
         .geolocation
         .getCurrentPosition((position) => {
             latitude = position.coords.latitude
             longitude = position.coords.longitude
+            axios.post(`${DOMAIN}/user/location`, {email, latitude, longitude})
+                .then((result)=>console.log(result))
+                .catch((error)=>console.log(error))
         }, (error) => {
             console.log(error)
             latitude = 37.49798901601007
             longitude = 127.03796438656106
+            axios.post(`${DOMAIN}/user/location`, {email, latitude, longitude})
+                .then((result)=>console.log(result))
+                .catch((error)=>console.log(error))
         })
-    axios.post(`${DOMAIN}/user/location`, {email, latitude, longitude})
-        .then((result)=>console.log(result))
-        .catch((error)=>console.log(error))
 }
 
 // 회원가입하기
