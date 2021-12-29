@@ -108,8 +108,8 @@ function updateLocation(email) {
                 .catch((error)=>console.log(error))
         }, (error) => {
             console.log(error)
-            latitude = 37.49798901601007
-            longitude = 127.03796438656106
+            latitude = null
+            longitude = null
             axios.post(`${DOMAIN}/user/location`, {email, latitude, longitude})
                 .then((result)=>console.log(result))
                 .catch((error)=>console.log(error))
@@ -416,11 +416,17 @@ export function removeComment(idx, id) {
 }
 
 // 게시글 불러오기
-const getArticles = () => {
+const getArticles = (around) => {
     loading = true
     userId = parseInt(sessionStorage.getItem("userId"))
+    let url
+    if (around && latitude && longitude) {
+        url = `${DOMAIN}/api/articles/${latitude}/${longitude}`
+    } else {
+        url = `${DOMAIN}/api/articles?page=${page}`
+    }
     axios
-        .get(`${DOMAIN}/api/articles?page=${page}`)
+        .get(url)
         .then(function (response) {
             const {data} = response
             if (!data.length) {
@@ -484,9 +490,13 @@ const router = () => {
         logInView()
     } else if (path === "logout") {
         logOut()
-    } else if (path === "") {
+    } else if (path === "town") {
         homePage()
-        getArticles()
+        getArticles(true)
+        setModal()
+    } else if (!path) {
+        homePage()
+        getArticles(false)
         setModal()
     }
 }
