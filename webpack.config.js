@@ -43,7 +43,8 @@ module.exports = (env) => {
         plugins: [
             new HtmlWebpackPlugin({
                 template: path.resolve(__dirname, 'src/index.html'),
-                filename: path.resolve(__dirname, 'index.html')
+                filename: path.resolve(__dirname, 'index.html'),
+                favicon: 'images/favicon.ico'
             }),
             new webpack.DefinePlugin({
                 API_URL: JSON.stringify(process.env.API_URL)
