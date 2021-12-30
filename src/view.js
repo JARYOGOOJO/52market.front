@@ -43,6 +43,9 @@ export function setHeader() {
                 <a class="nav-link" href="#">Home</a>
             </li>
             <li class="nav-item">
+                <a class="nav-link" href="#town">Town</a>
+            </li>
+            <li class="nav-item">
                 <a class="nav-link" href="#logout">logout</a>
             </li>
         </ul>`)

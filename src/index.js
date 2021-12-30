@@ -18,7 +18,8 @@ let userSubscribeId
 let loading = false
 let scrollable = true
 let page = 1
-let channelList = new Set();
+let latitude
+let longitude
 Kakao.init("e1289217c77f4f46dc511544f119d102")
 window.onload = () => setHeader()
 
@@ -48,7 +49,7 @@ const setToken = (data) => {
 
 // 카카오톡 로그인하기
 export function loginWithKakao() {
-    Kakao.Auth.login({
+    Kakao?.Auth.login({
         success: function (authObj) {
             console.log(authObj)
             axios.post(`${DOMAIN}/user/kakao`, {'token': `${authObj['access_token']}`})
@@ -57,6 +58,8 @@ export function loginWithKakao() {
                     setToken(response.data)
                     window.location.hash = ''
                     setHeader()
+                    let {email} = response.data
+                    updateLocation(email)
                 })
                 .catch((err) => console.log(err))
         },
@@ -95,21 +98,22 @@ export function loginToAuth() {
 }
 
 function updateLocation(email) {
-    let latitude
-    let longitude
     navigator
         .geolocation
         .getCurrentPosition((position) => {
             latitude = position.coords.latitude
             longitude = position.coords.longitude
+            axios.post(`${DOMAIN}/user/location`, {email, latitude, longitude})
+                .then((result)=>console.log(result))
+                .catch((error)=>console.log(error))
         }, (error) => {
             console.log(error)
-            latitude = 37.49798901601007
-            longitude = 127.03796438656106
+            latitude = null
+            longitude = null
+            axios.post(`${DOMAIN}/user/location`, {email, latitude, longitude})
+                .then((result)=>console.log(result))
+                .catch((error)=>console.log(error))
         })
-    axios.post(`${DOMAIN}/user/location`, {email, latitude, longitude})
-        .then((result)=>console.log(result))
-        .catch((error)=>console.log(error))
 }
 
 // 회원가입하기
@@ -217,7 +221,10 @@ function chatIN (roomSubscribeId) {
                     take(topic)
                 }
             })
-        }).catch((err)=>console.log(err))
+        }).catch((err)=>{
+            console.log(err)
+            chatOUT(roomSubscribeId)
+    })
 }
 
 const chatOUT = (roomSubscribeId) => {
@@ -351,7 +358,7 @@ export function writeArticle() {
 export function editArticle(idx) {
     axios.get(`${DOMAIN}/api/article/${idx}`)
         .then(response => {
-            let {id, title, content, user} = response.data
+            let {id, title, content} = response.data
             let answer = window.prompt("수정할 내용을 입력해주세요.", content)
             if (answer) {
                 let send = {id, title, content: answer, userId}
@@ -409,11 +416,17 @@ export function removeComment(idx, id) {
 }
 
 // 게시글 불러오기
-const getArticles = () => {
+const getArticles = (around) => {
     loading = true
     userId = parseInt(sessionStorage.getItem("userId"))
+    let url
+    if (around && latitude && longitude) {
+        url = `${DOMAIN}/api/articles/${latitude}/${longitude}`
+    } else {
+        url = `${DOMAIN}/api/articles?page=${page}`
+    }
     axios
-        .get(`${DOMAIN}/api/articles?page=${page}`)
+        .get(url)
         .then(function (response) {
             const {data} = response
             if (!data.length) {
@@ -477,9 +490,13 @@ const router = () => {
         logInView()
     } else if (path === "logout") {
         logOut()
-    } else if (path === "") {
+    } else if (path === "town") {
         homePage()
-        getArticles()
+        getArticles(true)
+        setModal()
+    } else if (!path) {
+        homePage()
+        getArticles(false)
         setModal()
     }
 }
