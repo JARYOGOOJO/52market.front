@@ -106,7 +106,7 @@ function updateLocation(email) {
             axios.post(`${DOMAIN}/user/location`, {email, latitude, longitude})
                 .then((result)=>console.log(result))
         }, (error) => {
-            console.log(error)
+            console.log("위치를 공유해주세요:D ")
         })
 }
 
