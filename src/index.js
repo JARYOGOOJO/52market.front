@@ -105,14 +105,8 @@ function updateLocation(email) {
             longitude = position.coords.longitude
             axios.post(`${DOMAIN}/user/location`, {email, latitude, longitude})
                 .then((result)=>console.log(result))
-                .catch((error)=>console.log(error))
         }, (error) => {
             console.log(error)
-            latitude = null
-            longitude = null
-            axios.post(`${DOMAIN}/user/location`, {email, latitude, longitude})
-                .then((result)=>console.log(result))
-                .catch((error)=>console.log(error))
         })
 }
 
