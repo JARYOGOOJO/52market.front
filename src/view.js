@@ -217,7 +217,7 @@ export function setModal() {
             <div class="modal-content">
                 <form action="" enctype="multipart/form-data" method="post">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="staticBackdropLabel">Modal title</h5>
+                        <h5 class="modal-title" id="staticBackdropLabel">Write</h5>
                         <button aria-label="Close" class="btn-close" data-bs-dismiss="modal" type="button"></button>
                     </div>
                     <div class="modal-body">
@@ -269,7 +269,7 @@ export const drawArticle = (article) => {
             <div id="commentEdit-${article.id}" class="input-group m-3 form-floating">
                 <input id="commentWrite-${article.id}" class="form-control" aria-describedby="button-addon2-${article.id}">
                 <label for="floatingInput">Leave a Comment...</label>
-                <button class="btn btn-success" id="button-addon2-${article.id}">Button</button>
+                <button class="btn btn-success" id="button-addon2-${article.id}">Write</button>
             </div>
             <ul class="list-group" id="comment-list-${article.id}">
             </ul></div></div>`
